@@ -1,0 +1,203 @@
+%{
+
+#include <stdlib.h>
+#include <string.h>
+#include <prscfl.h>
+#include <prscfl_gram.h>
+
+#define YY_EXTRA_TYPE prscfl_yy_extra_type *
+
+static int scan_yyerror(char *s);
+static void addstring(prscfl_yyscan_t yyscanner, char *s, int l);
+static void addchar(prscfl_yyscan_t yyscanner, char s);
+
+static YY_BUFFER_STATE buf = NULL;
+
+%}
+
+
+%option 8bit
+%option never-interactive
+%option nodefault
+%option noyywrap
+%option nounput
+%option prefix="prscfl_yy"
+%option reentrant
+%option noinput
+%option bison-bridge
+%option warn
+
+%x xQUOTED
+%x COMMENT
+
+KEYCHARSTART	[a-zA-Z_]
+KEYCHAR			[a-zA-Z0-9_]
+DIGIT			[0-9]
+
+%%
+
+<INITIAL>[Nn][Uu][Ll][Ll]	{
+			yylval->str = strdup("NULL");
+			return NULL_P;
+		}
+
+<INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
+			yylval->str = strndup(yytext, yyleng);
+			return	KEY_P;
+		}
+
+<INITIAL>#[ \t]* {
+			BEGIN COMMENT;
+			yyextra->total = 256;
+			yyextra->strbuf = malloc(yyextra->total);
+			yyextra->length = 0;
+		}
+
+<INITIAL>[\=\[\]\{\}] { return *yytext; }
+
+<INITIAL>\"	{
+			yyextra->total = 256;
+			yyextra->strbuf = malloc(yyextra->total);
+			yyextra->length = 0;
+			BEGIN xQUOTED;
+	}
+
+<INITIAL>[\-\+]?{DIGIT}+L {
+			yylval->int64val = strtoll(yytext, NULL, 10);
+			return INT64_P;
+		}
+
+<INITIAL>{DIGIT}+UL {
+			yylval->uint64val = strtoull(yytext, NULL, 10);
+			return UINT64_P;
+		}
+
+<INITIAL>{DIGIT}+U {
+			yylval->uint32val = strtoul(yytext, NULL, 10);
+			return UINT32_P;
+		}
+
+<INITIAL>[\-\+]?{DIGIT}+ {
+			yylval->int32val = strtol(yytext, NULL, 10);
+			return INT32_P;
+		}
+
+<INITIAL>[\-\+]?{DIGIT}+"."{DIGIT}+ {
+        	yylval->doubleval = strtod(yytext, NULL);
+			return DOUBLE_P;
+		}
+
+<INITIAL>[\-\+]?{DIGIT}+[eE][\+\-]?{DIGIT}+ {
+        	yylval->doubleval = strtod(yytext, NULL);
+			return DOUBLE_P;
+		}
+
+<INITIAL>[\-\+]?{DIGIT}+"."{DIGIT}+[eE][\+\-]?{DIGIT}+ {
+        	yylval->doubleval = strtod(yytext, NULL);
+			return DOUBLE_P;
+		}
+
+<xQUOTED>\\(.|\n)   {
+			addchar(yyscanner, yytext[1]);
+		}
+
+<xQUOTED>\"			{
+			yyextra->strbuf[yyextra->length] = '\0';
+			yylval->str = yyextra->strbuf;
+			BEGIN INITIAL;
+			yyextra->strbuf = NULL;
+			return STRING_P;
+		}
+
+<xQUOTED>\\ {
+			/* This is only needed for \ just before EOF */
+		}
+
+<xQUOTED><<EOF>> {
+			return scan_yyerror("Unexpected end of string");
+		}
+
+<xQUOTED>[^\\\"]+   {
+			addstring(yyscanner, yytext, yyleng);
+		}
+
+<COMMENT>.+    		{ 
+			addstring(yyscanner, yytext, yyleng);
+		}
+
+<COMMENT>[\r\n]+    	{ 
+			yyextra->strbuf[yyextra->length] = '\0';
+			yylval->str = yyextra->strbuf;
+			BEGIN INITIAL;
+			yyextra->strbuf = NULL;
+			return COMMENT_P;
+		}
+
+<INITIAL,COMMENT><<EOF>> {
+			yyterminate();
+		}
+
+<INITIAL>[ \t\r\n\f]+   { /* ignore */ }
+
+<INITIAL>. { return scan_yyerror("syntax error: Unknown character"); }
+
+%%
+
+static int
+scan_yyerror(char *msg) {
+    fprintf(stderr, "scan_yyerror: %s", msg);
+	return 0;
+}
+
+prscfl_yyscan_t
+prscflScannerInit(FILE *fh, prscfl_yy_extra_type *yyext) {
+	yyscan_t	scanner;
+
+	memset(yyext, 0, sizeof(*yyext));
+	yylex_init_extra(yyext, &scanner);
+
+	buf = yy_create_buffer( fh, YY_BUF_SIZE, scanner );
+	yy_switch_to_buffer( buf, scanner );
+
+	return scanner;
+}
+
+void
+prscflScannerFinish(prscfl_yyscan_t scanner) {
+	if (buf)
+		yy_delete_buffer( buf, scanner );
+	buf = NULL;
+}
+
+/*
+ * Arrange access to yyextra for subroutines of the main yylex() function.
+ * We expect each subroutine to have a yyscanner parameter.  Rather than
+ * use the yyget_xxx functions, which might or might not get inlined by the
+ * compiler, we cheat just a bit and cast yyscanner to the right type.
+ */
+#undef yyextra
+#define yyextra  (((struct yyguts_t *) yyscanner)->yyextra_r)
+
+static void
+addstring(prscfl_yyscan_t yyscanner, char *s, int l) {
+    while( yyextra->length + l + 1 >= yyextra->total ) {
+		yyextra->total *= 2;
+		yyextra->strbuf=realloc(yyextra->strbuf, yyextra->total);
+	}
+
+	memcpy( yyextra->strbuf+yyextra->length, s, l);
+	yyextra->length+=l;
+}
+
+static void
+addchar(prscfl_yyscan_t yyscanner, char s) {
+	if(  yyextra->length + 2 >= yyextra->total ) {
+		yyextra->total*=2;
+		yyextra->strbuf=realloc(yyextra->strbuf, yyextra->total);
+	}
+
+	yyextra->strbuf[ yyextra->length++ ] = s;
+}
+																
+
+

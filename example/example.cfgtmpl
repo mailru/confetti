@@ -1,0 +1,30 @@
+# foo value is responsible1
+foo=1234U
+bar=-54321L
+asdf= {
+# asdfffffas asdd
+	k1 = "as\"d"
+# lkjhsdfiuher
+# =========================r
+	k2 = NULL
+	# substruct
+	array = [
+		qwerty=123.9
+		qwer1=123
+		subarray = [
+			subkey = 12
+			subke12 = 7654UL
+		]
+
+		substruct = {
+			sss = "asdf.array.substruct.sss"
+
+		}
+	]
+
+}
+
+root_array = [
+	ra = -1.344e-08
+]
+
