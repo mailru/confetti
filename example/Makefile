@@ -23,6 +23,8 @@ example.c: $(NAME)_cfg.h
 
 cfg.c: $(NAME)_cfg.c $(NAME)_cfg.h prscfg.c prscfg.h
 
+cfg.o: $(NAME)_cfg.c $(NAME)_cfg.h prscfg.c prscfg.h
+
 .SUFFIXES: .o.c
 
 .c.o:

@@ -119,19 +119,23 @@ param:
 struct_list:
 	'{'	param_list '}'							{
 			OptDef	*str;
+			NameAtom	*idx;
 
-			MakeScalarParam(str, struct, NULL, $2); 
+			MakeAtom(idx, NULL);
+			MakeScalarParam(str, struct, idx, $2); 
 			SetParent( str, $2 );
-			SetIndex( $2, 0 );
+			SetIndex( str, 0 );
 			MakeScalarParam($$, array, NULL, str);
 			SetParent( $$, str );
 		}
 	| struct_list ',' '{' param_list '}' {
 			OptDef	*str;
+			NameAtom	*idx;
 
-			MakeScalarParam(str, struct, NULL, $4); 
+			MakeAtom(idx, NULL);
+			MakeScalarParam(str, struct, idx, $4); 
 			SetParent(str, $4);
-			SetIndex(str->paramValue.structval, $1->paramValue.arrayval->paramValue.structval->name->index + 1);
+			SetIndex(str, $1->paramValue.arrayval->name->index + 1);
 			MakeList($1->paramValue.arrayval, str, $1->paramValue.arrayval); 
 			SetParent($1, str);
 			$$ = $1;
@@ -182,17 +186,25 @@ freeName(NameAtom *atom) {
 
 static void
 compileName(OptDef	*def) {
-	NameAtom	*beginPtr, *endPtr, *list;
+	NameAtom	*beginPtr = NULL, *endPtr, *list;
 	OptDef	*c = def;
+	int		index = -1;
 
 	list = NULL;
 
 	while(c) {
-		if (c->name) {
+		if (c->name->name) {
 			beginPtr = cloneName(c->name, &endPtr);
+
+			if (index >= 0) {
+				beginPtr->index = index;
+				index = -1;
+			}
 
 			endPtr->next = list;
 			list = beginPtr;
+		} else {
+			index = c->name->index;
 		}
 
 		c = c->parent;

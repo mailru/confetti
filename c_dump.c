@@ -200,7 +200,7 @@ dumpStructFullPath(FILE *fh, ParamDef *def, int innerCall) {
 		fputs(def->name, fh);
 		if (def->paramType == arrayType && innerCall) {
 			fputs("[", fh);
-			dumpArrayIndex(fh, n+1);
+			dumpArrayIndex(fh, n);
 			fputs("]", fh);
 		}
 		return n + 1;
@@ -220,7 +220,7 @@ arrangeArray(FILE *fh, ParamDef *def) {
 			fputs("\t\tARRAYALLOC(", fh);
 			n = dumpStructFullPath(fh, def, 0);
 			fputs(", ", fh);
-			dumpArrayIndex(fh, n);
+			dumpArrayIndex(fh, n-1);
 			fputs(" + 1, ", fh);
 			dumpParamDefCName(fh, def);
 			fputs(");\n", fh);
@@ -405,16 +405,17 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	);
 
 	fputs(
+		"#define PRINTBUFLEN	8192\n"
 		"static char*\n"
 		"dumpOptDef(NameAtom *atom) {\n"
-		"\tstatic char	buf[8192], *ptr;\n"
+		"\tstatic char	buf[PRINTBUFLEN], *ptr;\n"
 		"\tint  i = 0;\n\n"
 		"\tptr = buf;\n"
 		"\twhile(atom) {\n"
-		"\t\tif (i) ptr += snprintf(ptr, ptr-buf-1, \".\");\n"
-		"\t\tptr += snprintf(ptr, ptr-buf-1, \"%s\", atom->name);\n"
+		"\t\tif (i) ptr += snprintf(ptr, PRINTBUFLEN - 1 - (ptr - buf), \".\");\n"
+		"\t\tptr += snprintf(ptr, PRINTBUFLEN - 1 - (ptr - buf), \"%s\", atom->name);\n"
 		"\t\tif (atom->index >= 0)\n"
-		"\t\t\tptr += snprintf(ptr, ptr-buf-1, \"[%d]\", atom->index);\n"
+		"\t\t\tptr += snprintf(ptr, PRINTBUFLEN - 1 - (ptr - buf), \"[%d]\", atom->index);\n"
 		"\t\ti = 1;\n"
 		"\t\tatom = atom->next;\n"
 		"\t}\n"
@@ -430,12 +431,13 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\tOptDef *option, *opt;\n\n"
 		"\toption = opt = parseCfgDef(fh);\n\n"
 		"\twhile(opt) {\n"
+		"\t\t/* out_warning(\"accept '%cs'\\n\", dumpOptDef(opt->name)); */\n"
 		"\t\tif ( (r = acceptValue(c, opt)) != 0 )\n"
 		"\t\t\tout_warning(\"Could not accept '%cs': %cd\\n\", dumpOptDef(opt->name), r);\n"
 		"\t\topt = opt->next;\n"
 		"\t}\n\n"
 		"\tfreeCfgDef(option);\n"
 		"}\n\n"
-		, name, name, '%', '%'
+		, name, name, '%', '%', '%'
 	);
 }
