@@ -193,14 +193,18 @@ dumpArrayIndex(FILE *fh, int n) {
 }
 
 static int
-dumpStructFullPath(FILE *fh, ParamDef *def, int innerCall) {
+dumpStructFullPath(FILE *fh, ParamDef *def, int innerCall, int isiterator) {
 	if (def) {
-		int n = dumpStructFullPath(fh, def->parent, 1);
+		int n = dumpStructFullPath(fh, def->parent, 1, isiterator);
 		fputs("->", fh);
 		fputs(def->name, fh);
 		if (def->paramType == arrayType && innerCall) {
 			fputs("[", fh);
-			dumpArrayIndex(fh, n);
+			if (isiterator) {
+				fputs("i->idx", fh);
+				dumpParamDefCName(fh, def);	
+			} else
+				dumpArrayIndex(fh, n);
 			fputs("]", fh);
 		}
 		return n + 1;
@@ -218,7 +222,7 @@ arrangeArray(FILE *fh, ParamDef *def) {
 		if (def->paramType == arrayType) {
 			int	n;
 			fputs("\t\tARRAYALLOC(", fh);
-			n = dumpStructFullPath(fh, def, 0);
+			n = dumpStructFullPath(fh, def, 0, 0);
 			fputs(", ", fh);
 			dumpArrayIndex(fh, n-1);
 			fputs(" + 1, ", fh);
@@ -273,7 +277,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	stringType:
 				printIf(fh, def, i);
 				fputs("\t\t", fh);
-				dumpStructFullPath(fh, def, 1);
+				dumpStructFullPath(fh, def, 1, 0);
 				switch(def->paramType) {
 					case	int32Type:
 						fputs(" = strtol(opt->paramValue.numberval, NULL, 10);\n", fh); 
@@ -316,6 +320,325 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 	}
 
 	return i;
+}
+
+static void
+makeIteratorStates(FILE *fh, ParamDef *def) {
+
+	while(def) {
+
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				fputs("\tS", fh);
+				dumpParamDefCName(fh, def);
+				fputs(",\n", fh);
+				break;
+			case	commentType:
+				fprintf(stderr, "Unexpected comment"); 
+				break;
+			case	structType:
+				fputs("\tS", fh);
+				dumpParamDefCName(fh, def);
+				fputs(",\n", fh);
+				makeIteratorStates(fh, def->paramValue.structval);
+				break;
+			case	arrayType:
+				fputs("\tS", fh);
+				dumpParamDefCName(fh, def);
+				fputs(",\n", fh);
+				makeIteratorStates(fh, def->paramValue.arrayval);
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
+static void
+makeArrayIndexes(FILE *fh, ParamDef *def) {
+
+	while(def) {
+
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				break;
+			case	commentType:
+				fprintf(stderr, "Unexpected comment"); 
+				break;
+			case	structType:
+				makeArrayIndexes(fh, def->paramValue.structval);
+				break;
+			case	arrayType:
+				fputs("\tint\tidx", fh);
+				dumpParamDefCName(fh, def);
+				fputs(";\n", fh);
+				makeArrayIndexes(fh, def->paramValue.arrayval);
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
+static void
+fputt(FILE *fh, int level) {
+	while(level--)
+		fputc('\t', fh);
+}
+
+static void
+makeSwitchArrayList(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				break;
+			case structType:
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				makeSwitchArrayList(fh, def->paramValue.structval, level);
+				break;
+			case arrayType:
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				makeSwitchArrayList(fh, def->paramValue.arrayval, level);
+				break;
+			default:
+				break;
+		}
+
+		def = def->next;
+	}
+}
+
+static void
+strdupValue(FILE *fh, ParamDef *def, int level) {
+	switch(def->paramType) {
+		case	int32Type:
+			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%d\", ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(");\n", fh);
+			break;
+		case	uint32Type:
+			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%u\", ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(");\n", fh);
+			break;
+		case	int64Type:
+			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%lld\", ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(");\n", fh);
+			break;
+		case	uint64Type:
+			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%llu\", ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(");\n", fh);
+			break;
+		case	doubleType:
+			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%g\", ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(");\n", fh);
+			break;
+		case	stringType:
+			fputt(fh, level); fputs("*v = (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(") ? strdup(", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(") : NULL;\n", fh);
+			break;
+		default:
+			break;
+	}
+}
+
+static void
+resetSubArray(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case structType:
+				resetSubArray(fh, def->paramValue.structval, level);
+				break;
+			case arrayType:
+				fputt(fh, level + 3);
+				fputs("i->idx", fh);
+				dumpParamDefCName(fh, def);
+				fputs(" = 0;\n", fh);
+				resetSubArray(fh, def->paramValue.arrayval, level);
+				break;
+			default:
+				break;
+		}
+
+		def = def->next;
+	}
+}
+
+static int
+dumpStructNameFullPath(FILE *fh, ParamDef *def, int innerCall) {
+	if (def) {
+		int n = dumpStructNameFullPath(fh, def->parent, 1);
+		if (n!=0)
+			fputs(".", fh);
+		fputs(def->name, fh);
+		if (def->paramType == arrayType && innerCall) {
+			fputs("[%d]", fh);
+		}
+		return n + 1;
+	} else {
+		return 0;
+	}
+}
+
+static int
+dumpArrayIndexes(FILE *fh, ParamDef *def, int innerCall) {
+	if (def) {
+		int n = dumpArrayIndexes(fh, def->parent, 1);
+		if (def->paramType == arrayType && innerCall) {
+			fputs(", ", fh);
+			fputs("i->idx", fh);
+			dumpParamDefCName(fh, def);	
+		}
+		return n + 1;
+	} else {
+		return 0;
+	}
+}
+
+static void
+makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next) {
+
+	while(def) {
+
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				/* case */
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				/* make val */
+				strdupValue(fh, def, level+3);
+				/* make name */
+				fputt(fh, level + 3);
+				fputs("snprintf(buf, PRINTBUFLEN-1, \"", fh);
+				dumpStructNameFullPath(fh, def, 0);
+				fputs("\"", fh);
+				dumpArrayIndexes(fh, def, 0);
+				fputs(");\n", fh);
+				/* extra work to switch to the next state */
+				if (def->next || next) {
+						fputt(fh, level + 3);
+						fputs("i->state = S", fh);
+						dumpParamDefCName(fh, def->next ? def->next : next);
+						fputs(";\n", fh);
+				} else {
+					if (parent) {
+						fputt(fh, level + 3);
+						fputs("i->state = S", fh);
+						dumpParamDefCName(fh, parent);
+						fputs(";\n", fh);
+						fputt(fh, level + 3);
+						fputs("i->idx", fh);
+						dumpParamDefCName(fh, parent);
+						fputs("++;\n", fh);	
+						resetSubArray(fh, parent->paramValue.arrayval, level);
+					} else {
+						fputt(fh, level + 3);
+						fputs("i->state = _S_Finished;\n", fh);
+					}
+				}
+				fputt(fh, level + 3);
+				fputs("return buf;\n", fh);
+				break;
+			case	commentType:
+				fprintf(stderr, "Unexpected comment"); 
+				break;
+			case	structType:
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				makeSwitch(fh, def->paramValue.structval, parent, level, def->next ? def->next : next);
+				break;
+			case	arrayType:
+				fputt(fh, level+2); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				fputt(fh, level+3); fputs( "i->state = S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(";\n", fh);
+				makeSwitchArrayList(fh, def->paramValue.arrayval, level);
+				fputt(fh, level+3); fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+					fputs(" && ", fh);
+					dumpStructFullPath(fh, def, 0, 1);
+					fputs("[i->idx", fh);
+					dumpParamDefCName(fh, def);
+					fputs("]) {\n", fh);
+				fputt(fh, level+4); fputs("switch(i->state) {\n", fh);
+				fputt(fh, level+5); fputs( "case S", fh);
+				dumpParamDefCName(fh, def);
+				fputs(":\n", fh);
+				makeSwitch(fh, def->paramValue.arrayval, def, level+3, NULL);
+				fputt(fh, level+5); fputs("default:\n", fh);
+				fputt(fh, level+6); fputs("break;\n", fh);
+				fputt(fh, level+4); fputs("}\n", fh);
+				fputt(fh, level+3); fputs("}\n", fh);
+				if (parent && !def->next) {
+					fputt(fh, level+3); fputs("else {\n", fh);
+					fputt(fh, level+4); fputs( "i->state = S", fh);
+					dumpParamDefCName(fh, parent);
+					fputs(";\n", fh);
+					fputt(fh, level+4);
+					fputs("i->idx", fh);
+					dumpParamDefCName(fh, parent);
+					fputs("++;\n", fh);	
+					resetSubArray(fh, parent->paramValue.arrayval, level+1);
+					fputt(fh, level+4); 
+					fputs("goto again;\n", fh);
+					fputt(fh, level+3); fputs("}\n", fh);
+				}
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
 }
 
 void 
@@ -440,4 +763,48 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"}\n\n"
 		, name, name, '%', '%', '%'
 	);
+
+	fputs(
+		"/************** Iterator **************/\n"
+		"typedef enum IteratorState {\n"
+		"\t_S_Initial = 0,\n"
+		, fh );
+	makeIteratorStates(fh, def);
+	fputs(
+		"\t_S_Finished\n"
+		"} IteratorState;\n\n"
+		, fh);
+
+	fprintf( fh, "struct %s_iterator_t {\n\tIteratorState\tstate;\n" , name);
+	makeArrayIndexes(fh, def);
+	fprintf( fh, "};\n\n");
+
+	fprintf(fh,
+		"%s_iterator_t*\n"
+		"%s_iterator_init() {\n"
+		"\t%s_iterator_t *i = malloc(sizeof(*i));\n"
+		"\tmemset(i, 0, sizeof(*i));\n"
+		"\treturn i;\n"
+		"}\n\n"
+		"char*\n"
+		"%s_iterator_next(%s_iterator_t* i, %s *c, char **v) {\n"
+		"\tstatic char\tbuf[PRINTBUFLEN];\n\n"
+		"\t*v = NULL;\n"
+		"\tgoto again; /* keep compiler quiet */\n"
+		"again:\n"
+		"\tswitch(i->state) {\n"
+		"\t\tcase _S_Initial:\n"
+		, name, name, name, name, name, name);
+	makeSwitch(fh, def, NULL, 0, NULL);
+	fprintf(fh,
+		"\t\tcase _S_Finished:\n"
+		"\t\t\tfree(i);\n"
+		"\t\t\tbreak;\n"
+		"\t\tdefault:\n"
+		"\t\t\tout_warning(\"Unknown state for %s_iterator_t: %cd\", i->state);\n"
+		"\t\t\tfree(i);\n"
+		"\t}\n"
+		"\treturn NULL;\n"
+		"}\n\n"
+		, name, '%' );
 }

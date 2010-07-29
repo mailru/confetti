@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
 #include <my_product_cfg.h>
@@ -15,6 +16,8 @@ out_warning(char *format, ...) {
 int
 main(int argc, char* argv[]) {
 	my_product	cfg;
+	my_product_iterator_t	*i;
+	char		*key, *value;
 
 	fill_default_my_product(&cfg);
 
@@ -29,6 +32,16 @@ main(int argc, char* argv[]) {
 		parse_cfg_file_my_product(&cfg, fh);
 
 		fclose(fh);
+	}
+
+	i = my_product_iterator_init();
+	while ( (key = my_product_iterator_next(i, &cfg, &value)) != NULL ) {
+		if (value) {
+			printf("%s => '%s'\n", key, value);
+			free(value);
+		} else {
+			printf("%s => (null)\n", key);
+		}
 	}
 
 	return 0;

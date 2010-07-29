@@ -11,15 +11,15 @@ asdf= {
 	array = [
 		qwerty=123.9
 		qwer1=123
+		substruct = {
+			sss = "asdf.array.substruct.sss"
+
+		}
 		subarray = [
 			subkey = 12
 			subke12 = 7654UL
 		]
 
-		substruct = {
-			sss = "asdf.array.substruct.sss"
-
-		}
 	]
 
 }

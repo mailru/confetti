@@ -11,7 +11,7 @@ usage() {
 	fputs(
 		"Copyright (c) 2010 Teodor Sigaev <teodor@sigaev.ru>. All rights reserved.\n"
 		"Usage:\n"
-		"confetti -i INPUTFILE [-c COUTFILE -n NAME | -h HOUTFILE -n NAME | -f CFGOUTFILE | -p PARSEROUTFILE | -H HPARSEOUTFILE]\n",
+		"confetti -i INPUTFILE [-D] (-c COUTFILE -n NAME | -h HOUTFILE -n NAME | -f CFGOUTFILE | -p PARSEROUTFILE | -H HPARSEOUTFILE)\n",
 		stdout
 	);
 
@@ -26,11 +26,11 @@ main(int argc, char* argv[]) {
 	char		*ifn = NULL, *cfn = NULL, *hfn = NULL, *cfgfn = NULL, *pfn = NULL, *Hfn = NULL;
 	FILE		*fh;
 	char		*name = NULL;
-	int			i;
+	int			i, debug = 0;;
 	ParamDef	*def;
 
 	opterr=0;
-	while((i=getopt(argc,argv,"i:c:h:f:n:p:H:")) != EOF) {
+	while((i=getopt(argc,argv,"i:c:h:f:n:p:H:D")) != EOF) {
 		switch(i) {
 			case 'i':
 				ifn = strdup(optarg);
@@ -53,6 +53,9 @@ main(int argc, char* argv[]) {
 			case 'n':
 				name = strdup(optarg);
 				break;
+			case 'D':
+				debug = 1;
+				break;
 			default:
 				usage();
 		}
@@ -72,6 +75,9 @@ main(int argc, char* argv[]) {
 	}
 
 	fclose(fh);
+
+	if (debug)
+		dDump(def);
 
 	if ( hfn ) {
 		if (!name)

@@ -23,8 +23,8 @@ static ParamDef	*output;
 
 #define MakeList(r, f, l)					\
 	if (f) {								\
+		(f)->next = (l);					\
 		(r) = (f);							\
-		(r)->next = (l);					\
 	} else {								\
 		(r) = (l);							\
 	}

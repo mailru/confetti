@@ -1,0 +1,10 @@
+foo => '1234'
+bar => '-54321'
+asdf.k1 => 'as"d'
+asdf.k2 => (null)
+asdf.array[0].qwerty => '123.9'
+asdf.array[0].qwer1 => '123'
+asdf.array[0].substruct.sss => 'asdf.array.substruct.sss'
+asdf.array[0].subarray[0].subkey => '12'
+asdf.array[0].subarray[0].subke12 => '7654'
+root_array[0].ra => '-1.344e-08'

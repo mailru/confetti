@@ -61,5 +61,6 @@ void cDump(FILE *fh, char *name, ParamDef *def);
 void fDump(FILE *fh, ParamDef *def);
 void pDump(FILE *fh);
 void HDump(FILE *fh);
+void dDump(ParamDef *def);
 
 #endif

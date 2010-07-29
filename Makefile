@@ -11,7 +11,7 @@ CFLAGS=-Wall -g -O0 -Werror -pedantic -std=c99
 INCLUDE=-I.
 LIB=
 
-OBJS=confetti.o h_dump.o f_dump.o c_dump.o p_dump.o
+OBJS=confetti.o h_dump.o f_dump.o c_dump.o p_dump.o d_dump.o
 PRSSRC = prscfl
 
 all: confetti
@@ -61,9 +61,22 @@ prscfg_gram.c: prscfg.y
 	mv -f y.tab.c $@
 	mv -f y.tab.h $(@:%.c=%.h)
 
+test: example
+	@[ -d results ] || mkdir results
+	@[ -d diffs ] || mkdir diffs
+	@for FILE in default defcfg custom ; do \
+		echo -n $$FILE	"    ........ " ; \
+		if sh tests/$$FILE > results/$$FILE 2>results/$$FILE.errout && diff -c expected/$$FILE results/$$FILE > diffs/$$FILE ; then \
+			echo ok ; \
+		else \
+			echo FAILED ; \
+		fi ; \
+	done
+
 clean:
 	rm -rf confetti $(OBJS)
 	rm -rf *core y.tab.*
+	rm -rf results diffs
 ifdef PRSSRC
 	for prs in $(PRSSRC); do rm -rf $${prs}_gram.c $${prs}_scan.c $${prs}_gram.h ; done
 endif

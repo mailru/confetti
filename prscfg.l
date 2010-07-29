@@ -57,7 +57,7 @@ DIGIT			[0-9]
 			BEGIN SCOMMENT;
 		}
 
-<INITIAL>[\=\[\]\{\}\.] { return *yytext; }
+<INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
 
 <INITIAL>\"	{
 			yyextra->total = 256;
