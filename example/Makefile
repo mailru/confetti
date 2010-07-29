@@ -3,14 +3,7 @@ NAME=my_product
 CFG=example.cfgtmpl
 
 CC=gcc
-AR=ar
-RANLIB=ranlib
-LD=ld
-BISON=bison -y -d
-FLEX=flex
 
-ARFLAGS=rcv
-LDFLAGS=-r
 CFLAGS=-Wall -g -O0 -Werror -pedantic -std=c99
 INCLUDE=-I.
 LIB=
