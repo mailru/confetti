@@ -41,6 +41,16 @@ DIGIT			[0-9]
 			return NULL_P;
 		}
 
+<INITIAL>[Rr][Oo]	{
+			yylval->str = strndup(yytext, yyleng);
+			return RDONLY_P;
+		}
+
+<INITIAL>[Rr][Ww]	{
+			yylval->str = strndup(yytext, yyleng);
+			return RDWR_P;
+		}
+
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
 			yylval->str = strndup(yytext, yyleng);
 			return	KEY_P;
@@ -53,7 +63,7 @@ DIGIT			[0-9]
 			yyextra->length = 0;
 		}
 
-<INITIAL>[\=\[\]\{\}] { return *yytext; }
+<INITIAL>[\=\[\]\{\}\,] { return *yytext; }
 
 <INITIAL>\"	{
 			yyextra->total = 256;
@@ -145,7 +155,7 @@ DIGIT			[0-9]
 
 static int
 scan_yyerror(char *msg) {
-    fprintf(stderr, "scan_yyerror: %s", msg);
+    fprintf(stderr, "scan_yyerror: %s\n", msg);
 	return 0;
 }
 

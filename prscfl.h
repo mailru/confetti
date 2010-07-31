@@ -49,6 +49,8 @@ typedef struct ParamDef {
 
 	char	*name;
 
+	int		rdonly;
+
 	struct ParamDef	*comment;
 	struct ParamDef	*parent;
 	struct ParamDef	*next;

@@ -153,12 +153,10 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 	dumpRecursive(fh, name, &root);
 
 	fprintf(fh, "void fill_default_%s(%s *c);\n", name, name);
-	fprintf(fh, "void parse_cfg_file_%s(%s *c, FILE *fh);\n\n", name, name);
+	fprintf(fh, "void parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly);\n\n", name, name);
 	fprintf(fh, "typedef struct %s_iterator_t %s_iterator_t;\n", name, name);
 	fprintf(fh, "%s_iterator_t* %s_iterator_init();\n", name, name);
 	fprintf(fh, "char* %s_iterator_next(%s_iterator_t* i, %s *c, char **v);\n", name, name, name);
-
-
 
 	fputs("#endif\n", fh);
 

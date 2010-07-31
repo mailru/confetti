@@ -221,6 +221,8 @@ arrangeArray(FILE *fh, ParamDef *def) {
 
 		if (def->paramType == arrayType) {
 			int	n;
+			if (def->rdonly) 
+				fputs("\t\tif (check_rdonly)\n\t\t\treturn -3;\n", fh);
 			fputs("\t\tARRAYALLOC(", fh);
 			n = dumpStructFullPath(fh, def, 0, 0);
 			fputs(", ", fh);
@@ -276,6 +278,8 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	doubleType:
 			case	stringType:
 				printIf(fh, def, i);
+				if (def->rdonly) 
+					fputs("\t\tif (check_rdonly)\n\t\t\treturn -3;\n", fh);
 				fputs("\t\t", fh);
 				dumpStructFullPath(fh, def, 1, 0);
 				switch(def->paramType) {
@@ -713,7 +717,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fprintf(fh, 
 		"static int\n"
-		"acceptValue(%s* c, OptDef* opt) {\n\n"
+		"acceptValue(%s* c, OptDef* opt, int check_rdonly) {\n\n"
 		, name);
 
 	makeAccept(fh, def, 0);
@@ -749,13 +753,13 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fprintf(fh,
 		"void\n"
-		"parse_cfg_file_%s(%s *c, FILE *fh) {\n"
+		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly) {\n"
 		"\tint    r;\n"
 		"\tOptDef *option, *opt;\n\n"
 		"\toption = opt = parseCfgDef(fh);\n\n"
 		"\twhile(opt) {\n"
 		"\t\t/* out_warning(\"accept '%cs'\\n\", dumpOptDef(opt->name)); */\n"
-		"\t\tif ( (r = acceptValue(c, opt)) != 0 )\n"
+		"\t\tif ( (r = acceptValue(c, opt, check_rdonly)) != 0 )\n"
 		"\t\t\tout_warning(\"Could not accept '%cs': %cd\\n\", dumpOptDef(opt->name), r);\n"
 		"\t\topt = opt->next;\n"
 		"\t}\n\n"

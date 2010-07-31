@@ -62,8 +62,9 @@ static ParamDef	*output;
 %type	<node>		commented_param
 %type	<node>		comment
 %type	<node>		cfg
+%type	<int32val>	rdonly_opt
 
-%token	<str>		KEY_P NULL_P STRING_P COMMENT_P
+%token	<str>		KEY_P NULL_P STRING_P COMMENT_P RDONLY_P RDWR_P 
 %token	<int32val>	INT32_P
 %token	<uint32val>	UINT32_P
 %token	<int64val>	INT64_P
@@ -79,6 +80,8 @@ cfg:
 identifier:
 	KEY_P			{ $$ = $1; }
 	| NULL_P		{ $$ = $1; }
+	| RDONLY_P		{ $$ = $1; }
+	| RDWR_P		{ $$ = $1; }
 	;
 
 param_list:
@@ -95,9 +98,16 @@ comment:
 		}
 	;
 
+rdonly_opt:
+	','	RDONLY_P				{ $$ = 1; }
+	| ',' RDWR_P				{ $$ = 0; }
+	| /* EMPTY */				{ $$ = 0; }
+	;
+
+
 commented_param:
-	param						{ $$ = $1; }
-	| comment param 			{ $$ = $2; $$->comment = $1; }
+	param rdonly_opt			{ $$ = $1; $$->rdonly = $2; }
+	| comment param rdonly_opt 	{ $$ = $2; $$->comment = $1; $$->rdonly = $3; }
 	;
 
 param:

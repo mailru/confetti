@@ -29,7 +29,7 @@ main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		parse_cfg_file_my_product(&cfg, fh);
+		parse_cfg_file_my_product(&cfg, fh, 0);
 
 		fclose(fh);
 	}

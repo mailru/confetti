@@ -9,7 +9,7 @@ asdf= {
 	k2 = NULL
 	# substruct
 	array = [
-		qwerty=123.9
+		qwerty=123.9, ro
 		qwer1=123
 		substruct = {
 			sss = "asdf.array.substruct.sss"
@@ -18,7 +18,7 @@ asdf= {
 		subarray = [
 			subkey = 12
 			subke12 = 7654UL
-		]
+		], ro
 
 	]
 
