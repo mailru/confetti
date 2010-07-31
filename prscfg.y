@@ -146,7 +146,7 @@ struct_list:
 
 static int
 prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg) {
-    fprintf(stderr, "gram_yyerror: %s\n", msg);
+    fprintf(stderr, "gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
 	return 0;
 }
 

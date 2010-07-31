@@ -126,7 +126,7 @@ param:
 
 static int
 prscfl_yyerror(prscfl_yyscan_t yyscanner, char *msg) {
-    fprintf(stderr, "gram_yyerror: %s\n", msg);
+    fprintf(stderr, "gram_yyerror: %s at line %d\n", msg, prscflGetLineNo(yyscanner));
 	return 0;
 }
 

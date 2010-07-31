@@ -11,6 +11,8 @@ typedef struct prscfl_yy_extra_type {
 	int length;
 	int total;
 
+	int lineno;
+
 } prscfl_yy_extra_type;
 
 /*
@@ -18,6 +20,7 @@ typedef struct prscfl_yy_extra_type {
  */
 
 typedef void *prscfl_yyscan_t;
+int prscflGetLineNo(prscfl_yyscan_t scanner);
 prscfl_yyscan_t prscflScannerInit(FILE *fh, prscfl_yy_extra_type *yyext);
 void prscflScannerFinish(prscfl_yyscan_t scanner);
 

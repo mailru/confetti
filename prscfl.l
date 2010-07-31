@@ -7,7 +7,7 @@
 
 #define YY_EXTRA_TYPE prscfl_yy_extra_type *
 
-static int scan_yyerror(char *s);
+static int scan_yyerror(char *s, int lineno);
 static void addstring(prscfl_yyscan_t yyscanner, char *s, int l);
 static void addchar(prscfl_yyscan_t yyscanner, char s);
 
@@ -107,8 +107,12 @@ DIGIT			[0-9]
 			return DOUBLE_P;
 		}
 
-<xQUOTED>\\(.|\n)   {
+<xQUOTED>\\.  {
 			addchar(yyscanner, yytext[1]);
+		}
+
+<xQUOTED>\\\n  {
+			yyextra->lineno++;
 		}
 
 <xQUOTED>\"			{
@@ -124,22 +128,30 @@ DIGIT			[0-9]
 		}
 
 <xQUOTED><<EOF>> {
-			return scan_yyerror("Unexpected end of string");
+			return scan_yyerror("Unexpected end of string", yyextra->lineno);
 		}
 
-<xQUOTED>[^\\\"]+   {
+<xQUOTED>[^\\\"\n]+   {
 			addstring(yyscanner, yytext, yyleng);
 		}
+
+<xQUOTED>\n   {
+			addchar(yyscanner, yytext[0]);
+			yyextra->lineno++;
+		}
+
+<COMMENT>\r			{ /* ignore */ }
 
 <COMMENT>.+    		{ 
 			addstring(yyscanner, yytext, yyleng);
 		}
 
-<COMMENT>[\r\n]+    	{ 
+<COMMENT>\n    	{ 
 			yyextra->strbuf[yyextra->length] = '\0';
 			yylval->str = yyextra->strbuf;
 			BEGIN INITIAL;
 			yyextra->strbuf = NULL;
+			yyextra->lineno++;
 			return COMMENT_P;
 		}
 
@@ -147,15 +159,17 @@ DIGIT			[0-9]
 			yyterminate();
 		}
 
-<INITIAL>[ \t\r\n\f]+   { /* ignore */ }
+<INITIAL>[ \t\r\f]+   { /* ignore */ }
 
-<INITIAL>. { return scan_yyerror("syntax error: Unknown character"); }
+<INITIAL>\n   { yyextra->lineno++; }
+
+<INITIAL>. { return scan_yyerror("syntax error: Unknown character", yyextra->lineno); }
 
 %%
 
 static int
-scan_yyerror(char *msg) {
-    fprintf(stderr, "scan_yyerror: %s\n", msg);
+scan_yyerror(char *msg, int lineno) {
+    fprintf(stderr, "scan_yyerror: %s at line %d\n", msg, lineno);
 	return 0;
 }
 
@@ -164,6 +178,7 @@ prscflScannerInit(FILE *fh, prscfl_yy_extra_type *yyext) {
 	yyscan_t	scanner;
 
 	memset(yyext, 0, sizeof(*yyext));
+	yyext->lineno = 1;
 	yylex_init_extra(yyext, &scanner);
 
 	buf = yy_create_buffer( fh, YY_BUF_SIZE, scanner );
@@ -187,6 +202,11 @@ prscflScannerFinish(prscfl_yyscan_t scanner) {
  */
 #undef yyextra
 #define yyextra  (((struct yyguts_t *) yyscanner)->yyextra_r)
+
+int 
+prscflGetLineNo(prscfl_yyscan_t yyscanner) {
+	return yyextra->lineno;
+}
 
 static void
 addstring(prscfl_yyscan_t yyscanner, char *s, int l) {

@@ -11,6 +11,7 @@ typedef struct prscfg_yy_extra_type {
 	int length;
 	int total;
 
+	int	lineno;
 	int	commentCounter;
 } prscfg_yy_extra_type;
 
@@ -21,7 +22,7 @@ typedef struct prscfg_yy_extra_type {
 typedef void *prscfg_yyscan_t;
 prscfg_yyscan_t prscfgScannerInit(FILE *fh, prscfg_yy_extra_type *yyext);
 void prscfgScannerFinish(prscfg_yyscan_t scanner);
-
+int prscfgGetLineNo(prscfg_yyscan_t yyscanner);
 
 typedef struct NameAtom {
 	char			*name;
@@ -50,6 +51,5 @@ typedef struct OptDef {
 	struct OptDef	*parent;
 	struct OptDef	*next;
 } OptDef;
-
 
 #endif
