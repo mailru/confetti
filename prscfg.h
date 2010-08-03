@@ -1,6 +1,7 @@
 #ifndef PRSCFG_H
 #define PRSCFG_H
 
+#include <stdio.h>
 #include <sys/types.h>
 
 typedef struct prscfg_yy_extra_type {
@@ -53,4 +54,7 @@ typedef struct OptDef {
 	struct OptDef	*next;
 } OptDef;
 
+OptDef* parseCfgDef(FILE *fh);
+OptDef* parseCfgDefBuffer(char *buffer);
+void 	freeCfgDef(OptDef *def);
 #endif
