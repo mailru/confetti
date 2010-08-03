@@ -294,4 +294,22 @@ parseCfgDef(FILE *fh) {
 	return plainOptDef(output, NULL);
 }
 
+OptDef*
+parseCfgDefBuffer(char *buffer) {
+	prscfg_yyscan_t			yyscanner;
+	prscfg_yy_extra_type	yyextra;
+	int						yyresult;
+
+	yyscanner = prscfgScannerInitBuffer(buffer, &yyextra);
+
+	output = NULL;
+	yyresult = prscfg_yyparse(yyscanner);
+	prscfgScannerFinish(yyscanner);
+
+	if (yyresult != 0) 
+		return NULL;
+
+	return plainOptDef(output, NULL);
+}
+
 

@@ -768,6 +768,23 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		, name, name, '%', '%', '%'
 	);
 
+	fprintf(fh,
+		"void\n"
+		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly) {\n"
+		"\tint    r;\n"
+		"\tOptDef *option, *opt;\n\n"
+		"\toption = opt = parseCfgDefBuffer(buffer);\n\n"
+		"\twhile(opt) {\n"
+		"\t\t/* out_warning(\"accept '%cs'\\n\", dumpOptDef(opt->name)); */\n"
+		"\t\tif ( (r = acceptValue(c, opt, check_rdonly)) != 0 )\n"
+		"\t\t\tout_warning(\"Could not accept '%cs': %cd\\n\", dumpOptDef(opt->name), r);\n"
+		"\t\topt = opt->next;\n"
+		"\t}\n\n"
+		"\tfreeCfgDef(option);\n"
+		"}\n\n"
+		, name, name, '%', '%', '%'
+	);
+
 	fputs(
 		"/************** Iterator **************/\n"
 		"typedef enum IteratorState {\n"

@@ -176,6 +176,20 @@ prscfgScannerInit(FILE *fh, prscfg_yy_extra_type *yyext) {
 	return scanner;
 }
 
+prscfg_yyscan_t
+prscfgScannerInitBuffer(char *buffer, prscfg_yy_extra_type *yyext) {
+	yyscan_t	scanner;
+
+	memset(yyext, 0, sizeof(*yyext));
+	yyext->lineno = 1;
+	yylex_init_extra(yyext, &scanner);
+
+	buf = yy_scan_string( buffer, scanner );
+	yy_switch_to_buffer( buf, scanner );
+
+	return scanner;
+}
+
 void
 prscfgScannerFinish(prscfg_yyscan_t scanner) {
 	if (buf)
