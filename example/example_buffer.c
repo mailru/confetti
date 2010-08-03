@@ -1,5 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+
+void
+out_warning(char *format, ...) {
+    va_list args;
+
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+}
 
 #include <my_product_cfg.h>
 

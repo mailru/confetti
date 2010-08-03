@@ -8,19 +8,15 @@ CFLAGS=-Wall -g -O0 -Werror -pedantic -std=c99
 INCLUDE=-I.
 LIB=
 
-example_OBJS=example.o cfg.o 
+example_OBJS=example.o my_product_cfg.o prscfg.o 
 
-example_buffer_OBJS=example_buffer.o cfg.o 
+example_buffer_OBJS=example_buffer.o my_product_cfg.o prscfg.o
 
 all: $(NAME).cfg example example_buffer 
 
 example.c: $(NAME)_cfg.h
 
 example_buffer.c: $(NAME)_cfg.h
-
-cfg.c: $(NAME)_cfg.c $(NAME)_cfg.h prscfg.c prscfg.h
-
-cfg.o: $(NAME)_cfg.c $(NAME)_cfg.h prscfg.c prscfg.h
 
 .SUFFIXES: .o.c
 
@@ -47,6 +43,10 @@ prscfg.c: $(CFG)
 
 prscfg.h: $(CFG)
 	$(CONFETTI) -i $< -H $@
+
+prscfg.c: prscfg.h $(NAME)_cfg.h
+
+$(NAME)_cfg.c: prscfg.h $(NAME)_cfg.h
 
 clean:
 	rm -f $(NAME).cfg $(NAME)_cfg.c $(NAME)_cfg.h

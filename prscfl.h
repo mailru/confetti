@@ -35,7 +35,8 @@ typedef struct ParamDef {
 		stringType 	= 5,
 		commentType = 6,
 		structType 	= 7,
-		arrayType	= 8 
+		arrayType	= 8,
+		builtinType = 9
 	} paramType;
 
 	union {
@@ -48,6 +49,7 @@ typedef struct ParamDef {
 		char			*commentval;
 		struct ParamDef *structval;
 		struct ParamDef *arrayval;
+		char			*builtinval;
 	} paramValue;
 
 	char	*name;
@@ -64,7 +66,7 @@ void hDump(FILE *fh, char *name, ParamDef *def);
 void dumpStructName(FILE *fh, ParamDef *def, char *delim);
 void cDump(FILE *fh, char *name, ParamDef *def);
 void fDump(FILE *fh, ParamDef *def);
-void pDump(FILE *fh);
+void pDump(FILE *fh, ParamDef *def);
 void HDump(FILE *fh);
 void dDump(ParamDef *def);
 

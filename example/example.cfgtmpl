@@ -1,3 +1,11 @@
+%{
+#include <prscfg.h>
+#include <my_product_cfg.h>
+
+void out_warning(char *format, ...);
+
+%}
+
 # foo value is responsible1
 foo=1234U
 bar=-54321L

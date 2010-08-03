@@ -15,6 +15,11 @@ printPrefix(FILE *fh, int level) {
 static void
 dumpParamDef(FILE *fh, int level, ParamDef *def) {
 	while(def) {
+		if (def->paramType == builtinType) {
+			def = def->next;
+			continue;
+		}
+
 		if (def->comment) {
 			ParamDef	*i = def->comment;
 	
@@ -104,4 +109,6 @@ fDump(FILE *fh, ParamDef *def) {
 	def->parent = &root;
 
 	dumpParamDef(fh, 0, def);
+
+	def->parent = NULL;
 }

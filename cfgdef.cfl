@@ -1,3 +1,8 @@
+%{
+#include <stdio.h>
+
+%}
+
 # foo value is responsible1
 foo=1234U
 bar=54321L

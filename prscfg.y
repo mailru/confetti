@@ -147,7 +147,7 @@ struct_list:
 
 static int
 prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg) {
-    fprintf(stderr, "gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
+   out_warning("gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
 	return 0;
 }
 
@@ -236,7 +236,7 @@ plainOptDef(OptDef *def, OptDef *list) {
 				list = plainOptDef(def->paramValue.arrayval, list);
 				break;
 			default:
-				fprintf(stderr,"Unkown paramType: %d", def->paramType);
+				out_warning("Unkown paramType: %d", def->paramType);
 		}
 
 		ptr = def->next;

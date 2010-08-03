@@ -135,7 +135,7 @@ main(int argc, char* argv[]) {
 			exit(1);
 		}
 	
-		pDump(fh);
+		pDump(fh, def);
 
 		if (fh != stdout)
 			fclose(fh);

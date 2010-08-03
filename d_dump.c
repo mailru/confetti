@@ -45,6 +45,9 @@ debugParamDef(ParamDef *def, int level) {
 				printf("array\t%s\n", def->name);
 				debugParamDef(def->paramValue.arrayval, level+1);
 				break;
+			case 	builtinType:
+				printf("BUILTIN\n");
+				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
 				exit(1);

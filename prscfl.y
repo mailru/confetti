@@ -64,7 +64,8 @@ static ParamDef	*output;
 %type	<node>		cfg
 %type	<int32val>	rdonly_opt
 
-%token	<str>		KEY_P NULL_P STRING_P COMMENT_P RDONLY_P RDWR_P 
+%token	<str>		KEY_P NULL_P STRING_P COMMENT_P RDONLY_P RDWR_P
+					BUILTIN_P
 %token	<int32val>	INT32_P
 %token	<uint32val>	UINT32_P
 %token	<int64val>	INT64_P
@@ -74,7 +75,14 @@ static ParamDef	*output;
 %%
 
 cfg:
-	param_list		{ output = $$ = $1; }
+	BUILTIN_P param_list	{
+				ParamDef	*b;
+
+				MakeScalarParam(b, builtin, NULL, $1);
+				MakeList($$, b, $2);
+				output = $$;
+			}
+	| param_list			{ output = $$ = $1; }
 	;
 
 identifier:
@@ -103,7 +111,6 @@ rdonly_opt:
 	| ',' RDWR_P				{ $$ = 0; }
 	| /* EMPTY */				{ $$ = 0; }
 	;
-
 
 commented_param:
 	param rdonly_opt			{ $$ = $1; $$->rdonly = $2; }

@@ -29,6 +29,7 @@ static YY_BUFFER_STATE buf = NULL;
 
 %x xQUOTED
 %x COMMENT
+%x BUILTIN
 
 KEYCHARSTART	[a-zA-Z_]
 KEYCHAR			[a-zA-Z0-9_]
@@ -64,6 +65,13 @@ DIGIT			[0-9]
 		}
 
 <INITIAL>[\=\[\]\{\}\,] { return *yytext; }
+
+<INITIAL>\%\{			{ 
+			yyextra->total = 256;
+			yyextra->strbuf = malloc(yyextra->total);
+			yyextra->length = 0;
+			BEGIN BUILTIN;
+	}
 
 <INITIAL>\"	{
 			yyextra->total = 256;
@@ -154,6 +162,25 @@ DIGIT			[0-9]
 			yyextra->lineno++;
 			return COMMENT_P;
 		}
+
+<BUILTIN>\n		{
+			yyextra->lineno++;
+			addchar(yyscanner, yytext[0]);
+		}
+
+<BUILTIN>\%\}	{
+			yyextra->strbuf[yyextra->length] = '\0';
+			yylval->str = yyextra->strbuf;
+			BEGIN INITIAL;
+			yyextra->strbuf = NULL;
+			return BUILTIN_P;
+		}
+
+<BUILTIN>.		{
+			addchar(yyscanner, yytext[0]);
+		}
+
+<BUILTIN><<EOF>> { return scan_yyerror("Unexpected end of file", yyextra->lineno); }
 
 <INITIAL,COMMENT><<EOF>> {
 			yyterminate();

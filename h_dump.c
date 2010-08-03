@@ -66,6 +66,8 @@ dumpParamDef(FILE *fh, char* name, ParamDef *def) {
 			dumpStructName(fh, def->paramValue.arrayval, "_");
 			fprintf(fh, "**\t%s;\n", def->name);
 			break;
+		case 	builtinType:
+			break;
 		default:
 			fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
 			exit(1);

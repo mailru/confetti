@@ -45,6 +45,8 @@ example: all
 
 p_dump.c: parse_source.c header_source.c
 
+p_dump.o: p_dump.c parse_source.c header_source.c
+
 parse_source.c: prscfg_gram.c prscfg_gram.h prscfg_scan.c
 	cat prscfg_gram.h prscfg_gram.c prscfg_scan.c | \
 		perl ./makec.pl \
