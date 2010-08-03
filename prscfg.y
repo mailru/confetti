@@ -111,7 +111,8 @@ param_list:
 param:
 	keyname '=' NUMBER_P			{ MakeScalarParam($$, number, $1, $3); }
 	| keyname '=' STRING_P			{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' NULL_P			{ MakeScalarParam($$, string, $1, NULL); }
+	| keyname '=' KEY_P				{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' NULL_P			{ MakeScalarParam($$, string, $1, NULL); free($3); }
 	| keyname '=' '{' param_list '}' { MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	| keyname '=' '[' struct_list ']' { $4->name = $1; $$ = $4; }
 	;
