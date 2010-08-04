@@ -71,7 +71,7 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 
 static void
 dumpStructPath(FILE *fh, ParamDef *def) {
-	fputs("\tc", fh);
+	fputs("c", fh);
 	dumpStructName(fh, def, "->");
 	fputs("->", fh);
 	fputs(def->name, fh);
@@ -82,6 +82,7 @@ dumpDefault(FILE *fh, ParamDef *def) {
 
 	while(def) {
 
+		fputs("\t", fh);
 		switch(def->paramType) {
 			case	int32Type:
 				dumpStructPath(fh, def);
@@ -118,6 +119,9 @@ dumpDefault(FILE *fh, ParamDef *def) {
 						ptr++;
 					}
 					fputs("\");\n", fh);
+					fputs("\tif (", fh);
+					dumpStructPath(fh, def);
+					fputs(" == NULL) return -6;\n", fh);
 				}
 				break;
 			case	commentType:
@@ -128,6 +132,9 @@ dumpDefault(FILE *fh, ParamDef *def) {
 				fputs(" = malloc(sizeof( *(", fh);
 				dumpStructPath(fh, def);
 				fputs(") ));\n", fh);
+				fputs("\tif (", fh);
+				dumpStructPath(fh, def);
+				fputs(" == NULL) return -6;\n", fh);
 				dumpDefault(fh, def->paramValue.structval);
 				break;
 			case	arrayType:
@@ -149,7 +156,7 @@ dumpDefaultArray(FILE *fh, char *name, ParamDef *def) {
 		if (def->paramType == arrayType) {
 			ParamDef *ptr;
 			
-			fputs("static void\nacceptDefault", fh);
+			fputs("static int\nacceptDefault", fh);
 			dumpParamDefCName(fh, def);
 			fputs("(", fh);
 			fputs(name, fh);
@@ -165,13 +172,14 @@ dumpDefaultArray(FILE *fh, char *name, ParamDef *def) {
 
 			dumpDefault(fh, def->paramValue.arrayval);
 
-			/* restor parent */
+			/* restore parent */
 			ptr = def->paramValue.arrayval;
 			while(ptr) {
 				ptr->parent = def;
 				ptr = ptr->next;
 			}
 
+			fputs("\treturn 0;\n", fh);
 			fputs("}\n\n", fh);
 
 			dumpDefaultArray(fh, name, def->paramValue.arrayval);
@@ -280,26 +288,65 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				printIf(fh, def, i);
 				if (def->rdonly) 
 					fputs("\t\tif (check_rdonly)\n\t\t\treturn -3;\n", fh);
+				fputs("\t\terrno = 0;\n", fh);
 				fputs("\t\t", fh);
 				dumpStructFullPath(fh, def, 1, 0);
 				switch(def->paramType) {
 					case	int32Type:
-						fputs(" = strtol(opt->paramValue.numberval, NULL, 10);\n", fh); 
+						fputs(" = strtol(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tif (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == LONG_MIN || ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == LONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	uint32Type:
 						fputs(" = strtoul(opt->paramValue.numberval, NULL, 10);\n", fh); 
+						fputs("\t\tif (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == ULONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	int64Type:
 						fputs(" = strtoll(opt->paramValue.numberval, NULL, 10);\n", fh); 
+						fputs("\t\tif (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == LLONG_MIN || ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == LLONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	uint64Type:
 						fputs(" = strtoull(opt->paramValue.numberval, NULL, 10);\n", fh); 
+						fputs("\t\tif (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == ULLONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	doubleType:
 						fputs(" = strtod(opt->paramValue.numberval, NULL);\n", fh); 
+						fputs("\t\tif ( (", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == 0 || ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == -HUGE_VAL || ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == HUGE_VAL) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	stringType:
-						fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh); 
+						fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
+						fputs("\t\t if (opt->paramValue.stringval && ", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" == NULL)\n\t\t\treturn -6;\n", fh);
 					default:
 						break;
 				}
@@ -445,30 +492,55 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 	switch(def->paramType) {
 		case	int32Type:
 			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%d\", ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
 		case	uint32Type:
 			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%u\", ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
 		case	int64Type:
 			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%lld\", ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
 		case	uint64Type:
 			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%llu\", ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
 		case	doubleType:
 			fputt(fh, level); fputs("*v = malloc(32);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%g\", ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
@@ -479,6 +551,13 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 				fputs(") ? strdup(", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(") : NULL;\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL && ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(") {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
 			break;
 		default:
 			break;
@@ -649,6 +728,9 @@ void
 cDump(FILE *fh, char* name, ParamDef *def) {
 	
 	fputs(
+		"#include <errno.h>\n"
+		"#include <limits.h>\n"
+		"#include <math.h>\n"
 		"#include <stdlib.h>\n"
 		"#include <string.h>\n"
 		"#include <stdio.h>\n\n"
@@ -681,13 +763,13 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 
 	fprintf(fh,
-		"void\n"
+		"int\n"
 		"fill_default_%s(%s *c) {\n"
 		, name, name
 	);
 
 	dumpDefault(fh, def);
-	fputs("}\n\n", fh);
+	fputs("\treturn 0;\n}\n\n", fh);
 
 	dumpDefaultArray(fh, name, def);
 
@@ -696,23 +778,26 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fputs(
 		"\n"
 		"#define ARRAYALLOC(x,n,t)  do {                                     \\\n"
-		"   int l = 0;                                                       \\\n"
-		"   __typeof__(x) y = (x);                                           \\\n"
+		"   int l = 0, ar;                                                   \\\n"
+		"   __typeof__(x) y = (x), t;                                        \\\n"
 		"   if ( (n) <= 0 ) return -2; /* wrong index */                     \\\n"
 		"   while(y && *y) {                                                 \\\n"
 		"       l++; y++;                                                    \\\n"
 		"   }                                                                \\\n"
 		"   if ( (n) >= l ) {                                                \\\n"
 		"      if ( (x) == NULL )                                            \\\n"
-		"          (x) = y = malloc( ((n)+1) * sizeof( __typeof__(*(x))) );  \\\n" 
+		"          t = y = malloc( ((n)+1) * sizeof( __typeof__(*(x))) );    \\\n" 
 		"      else {                                                        \\\n"
-		"          (x) = realloc((x), ((n)+1) * sizeof( __typeof__(*(x))) ); \\\n"
-		"          y = (x) + l;                                              \\\n"
+		"          t = realloc((x), ((n)+1) * sizeof( __typeof__(*(x))) );   \\\n"
+		"          y = t + l;                                                \\\n"
 		"      }                                                             \\\n"
+		"      if (t == NULL)  return -6;                                    \\\n"
+		"      (x) = t;                                                      \\\n"
 		"      memset(y, 0, (((n)+1) - l) * sizeof( __typeof__(*(x))) );     \\\n"
 		"      while ( y - (x) < (n) ) {                                     \\\n"
 		"          *y = malloc( sizeof( __typeof__(**(x))) );                \\\n"
-		"          acceptDefault##t(*y);                                     \\\n"
+		"          if (*y == NULL)  return -6;                               \\\n"
+		"          if ( (ar = acceptDefault##t(*y)) != 0 ) return ar;        \\\n"
 		"          y++;                                                      \\\n"
 		"      }                                                             \\\n"
 		"   }                                                                \\\n"
@@ -757,37 +842,77 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	);
 
 	fprintf(fh,
-		"void\n"
-		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly) {\n"
-		"\tint    r;\n"
-		"\tOptDef *option, *opt;\n\n"
-		"\toption = opt = parseCfgDef(fh);\n\n"
+		"static void\n"
+		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"\tint	r;\n\n"
+		"\tif (n_accepted) *n_accepted=0;\n"
+		"\tif (n_skipped) *n_skipped=0;\n"
+		"\n"
 		"\twhile(opt) {\n"
-		"\t\t/* out_warning(\"accept '%cs'\\n\", dumpOptDef(opt->name)); */\n"
-		"\t\tif ( (r = acceptValue(c, opt, check_rdonly)) != 0 )\n"
-		"\t\t\tout_warning(\"Could not accept '%cs': %cd\\n\", dumpOptDef(opt->name), r);\n"
+		"\t\tr = acceptValue(c, opt, check_rdonly);\n"
+		"\t\tswitch(r) {\n"
+		"\t\t\tcase 1:\n"
+		"\t\t\t\tout_warning(\"Could not find '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase 0:\n"
+		"\t\t\t\tif (n_accepted) (*n_accepted)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -1:\n"
+		"\t\t\t\tout_warning(\"Wrong value type for '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -2:\n"
+		"\t\t\t\tout_warning(\"Wrong array index in '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -3:\n"
+		"\t\t\t\tout_warning(\"Could not accept read only '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -4:\n"
+		"\t\t\t\tout_warning(\"Could not parse integer value for '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -5:\n"
+		"\t\t\t\tout_warning(\"Wrong range for '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase -6:\n"
+		"\t\t\t\tout_warning(\"Not enough memory to accept '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tdefault:\n"
+		"\t\t\t\tout_warning(\"Unknown error for '%cs' option\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t}\n\n"
 		"\t\topt = opt->next;\n"
-		"\t}\n\n"
+		"\t}\n"
+		"}\n\n"
+		, name, '%', '%', '%', '%', '%', '%', '%', '%'
+	); 
+
+	fprintf(fh,
+		"void\n"
+		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"\tOptDef *option;\n\n"
+		"\toption = parseCfgDef(fh);\n"
+		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped);\n"
 		"\tfreeCfgDef(option);\n"
 		"}\n\n"
-		, name, name, '%', '%', '%'
+		, name, name
 	);
 
 	fprintf(fh,
 		"void\n"
-		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly) {\n"
-		"\tint    r;\n"
-		"\tOptDef *option, *opt;\n\n"
-		"\toption = opt = parseCfgDefBuffer(buffer);\n\n"
-		"\twhile(opt) {\n"
-		"\t\t/* out_warning(\"accept '%cs'\\n\", dumpOptDef(opt->name)); */\n"
-		"\t\tif ( (r = acceptValue(c, opt, check_rdonly)) != 0 )\n"
-		"\t\t\tout_warning(\"Could not accept '%cs': %cd\\n\", dumpOptDef(opt->name), r);\n"
-		"\t\topt = opt->next;\n"
-		"\t}\n\n"
+		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"\tOptDef *option;\n\n"
+		"\toption = parseCfgDefBuffer(buffer);\n"
+		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped);\n"
 		"\tfreeCfgDef(option);\n"
 		"}\n\n"
-		, name, name, '%', '%', '%'
+		, name, name
 	);
 
 	fputs(
@@ -809,6 +934,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"%s_iterator_t*\n"
 		"%s_iterator_init() {\n"
 		"\t%s_iterator_t *i = malloc(sizeof(*i));\n"
+		"\tif (i == NULL) return NULL;\n"
 		"\tmemset(i, 0, sizeof(*i));\n"
 		"\treturn i;\n"
 		"}\n\n"

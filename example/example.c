@@ -22,6 +22,7 @@ main(int argc, char* argv[]) {
 	fill_default_my_product(&cfg);
 
 	if (argc > 1) {
+		int			nAccepted, nSkipped;
 		FILE *fh = fopen(argv[1], "r");
 
 		if (!fh) {
@@ -29,7 +30,9 @@ main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		parse_cfg_file_my_product(&cfg, fh, 0);
+		parse_cfg_file_my_product(&cfg, fh, 0, &nAccepted, &nSkipped);
+
+		printf("==========Accepted: %d; Skipped: %d===========\n", nAccepted, nSkipped);
 
 		fclose(fh);
 	}
