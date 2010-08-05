@@ -14,44 +14,52 @@ static int prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg);
 extern int prscfg_yylex (YYSTYPE * yylval_param, prscfg_yyscan_t yyscanner);
 static OptDef	*output;
 
-#define MakeAtom(r, n)				do {	\
-	(r) = malloc(sizeof(NameAtom));			\
-	(r)->name = (n);						\
-	(r)->index = -1;						\
-	(r)->next = NULL;						\
+#define MakeAtom(r, n)				do {		\
+	(r) = malloc(sizeof(NameAtom));				\
+	if (!(r)) {									\
+		prscfg_yyerror(yyscanner, "No memory");	\
+		YYERROR;								\
+	}											\
+	(r)->name = (n);							\
+	(r)->index = -1;							\
+	(r)->next = NULL;							\
 } while(0)
 
-#define MakeScalarParam(r, t, n, v)	do {  	\
-	(r) = malloc(sizeof(OptDef));			\
-	(r)->paramType = t##Type;				\
-	(r)->paramValue.t##val = (v);			\
-	(r)->name = (n);						\
-	(r)->parent = NULL;						\
-	(r)->next = NULL;						\
+#define MakeScalarParam(r, t, n, v)	do {  		\
+	(r) = malloc(sizeof(OptDef));				\
+	if (!(r)) {									\
+		prscfg_yyerror(yyscanner, "No memory");	\
+		YYERROR;								\
+	}											\
+	(r)->paramType = t##Type;					\
+	(r)->paramValue.t##val = (v);				\
+	(r)->name = (n);							\
+	(r)->parent = NULL;							\
+	(r)->next = NULL;							\
 } while(0)
 
-#define MakeList(r, f, l)					\
-	if (f) {								\
-		(f)->next = (l);					\
-		(r) = (f);							\
-	} else {								\
-		(r) = (l);							\
+#define MakeList(r, f, l)						\
+	if (f) {									\
+		(f)->next = (l);						\
+		(r) = (f);								\
+	} else {									\
+		(r) = (l);								\
 	}
 
-#define SetParent(p, l) do {                \
-    OptDef *i = (l);                      	\
-	while(i) {                              \
-		i->parent = (p);                    \
-		i = i->next;                        \
-	}                                       \
+#define SetParent(p, l) do {                	\
+    OptDef *i = (l);                      		\
+	while(i) {                              	\
+		i->parent = (p);                    	\
+		i = i->next;                        	\
+	}                                       	\
 } while(0)
 
-#define SetIndex(l, in) do {                \
-    OptDef *i = (l);                      	\
-	while(i) {                              \
-		i->name->index = (in);              \
-		i = i->next;                        \
-	}                                       \
+#define SetIndex(l, in) do {                	\
+    OptDef *i = (l);                      		\
+	while(i) {                              	\
+		i->name->index = (in);              	\
+		i = i->next;                        	\
+	}                                       	\
 } while(0)
 
 %}
@@ -59,6 +67,7 @@ static OptDef	*output;
 %pure-parser
 %expect 0
 %name-prefix="prscfg_yy"
+%error-verbose
 
 %parse-param {prscfg_yyscan_t yyscanner}
 %lex-param   {prscfg_yyscan_t yyscanner}
@@ -147,7 +156,7 @@ struct_list:
 
 static int
 prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg) {
-   out_warning("gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
+	out_warning("gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
 	return 0;
 }
 
@@ -157,8 +166,17 @@ cloneName(NameAtom *list, NameAtom **end) {
 
 	while(list) {
 		ptr = *end = malloc(sizeof(*ptr));
+		if (!ptr) {
+			out_warning("No memory");
+			return NULL;
+		}
 		*ptr = *list;
 		ptr->name = strdup(ptr->name);
+		if (!ptr->name) {
+			out_warning("No memory");
+			free(ptr);
+			return NULL;
+		}
 
 		if (newList) {
 			endptr->next = ptr;
@@ -185,7 +203,7 @@ freeName(NameAtom *atom) {
 	}
 }
 
-static void
+static int
 compileName(OptDef	*def) {
 	NameAtom	*beginPtr = NULL, *endPtr, *list;
 	OptDef	*c = def;
@@ -196,6 +214,8 @@ compileName(OptDef	*def) {
 	while(c) {
 		if (c->name->name) {
 			beginPtr = cloneName(c->name, &endPtr);
+			if (!beginPtr)
+				return 1;
 
 			if (index >= 0) {
 				beginPtr->index = index;
@@ -212,6 +232,8 @@ compileName(OptDef	*def) {
 	}
 
 	def->name = list;
+
+	return 0;
 }
 
 static OptDef*
@@ -223,8 +245,20 @@ plainOptDef(OptDef *def, OptDef *list) {
 			case numberType:
 			case stringType:
 				ptr = malloc(sizeof(*ptr));
+				if (!ptr) {
+					out_warning("No memory");
+					freeCfgDef(def);
+					freeCfgDef(list);
+					return NULL;
+				}
 				*ptr = *def;
-				compileName(ptr);
+				if (compileName(ptr)) {
+					freeName(ptr->name);
+					free(ptr);
+					freeCfgDef(def);
+					freeCfgDef(list);
+					return NULL;
+				}
 				ptr->parent = NULL;
 				ptr->next = list;
 				list = ptr;

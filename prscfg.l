@@ -9,8 +9,8 @@
 #define YY_EXTRA_TYPE prscfg_yy_extra_type *
 
 static int scan_yyerror(char *s, int lineno);
-static void addstring(prscfg_yyscan_t yyscanner, char *s, int l);
-static void addchar(prscfg_yyscan_t yyscanner, char s);
+static int addstring(prscfg_yyscan_t yyscanner, char *s, int l);
+static int addchar(prscfg_yyscan_t yyscanner, char s);
 
 static YY_BUFFER_STATE buf = NULL;
 
@@ -40,6 +40,8 @@ DIGIT			[0-9]
 
 <INITIAL>[Nn][Uu][Ll][Ll]	{
 			yylval->str = strdup("NULL");
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return NULL_P;
 		}
 
@@ -50,6 +52,8 @@ DIGIT			[0-9]
 
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
 			yylval->str = strndup(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return	KEY_P;
 		}
 
@@ -62,32 +66,43 @@ DIGIT			[0-9]
 <INITIAL>\"	{
 			yyextra->total = 256;
 			yyextra->strbuf = malloc(yyextra->total);
+			if (!yyextra->strbuf)
+				scan_yyerror("No memory", yyextra->lineno);	
 			yyextra->length = 0;
 			BEGIN xQUOTED;
 	}
 
 <INITIAL>[\-\+]?{DIGIT}+ {
 			yylval->str = strndup(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+ {
 			yylval->str = strndup(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+[eE][\+\-]?{DIGIT}+ {
 			yylval->str = strndup(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+[eE][\+\-]?{DIGIT}+ {
 			yylval->str = strndup(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <xQUOTED>\\.  {
-			addchar(yyscanner, yytext[1]);
+			if (addchar(yyscanner, yytext[1]))
+				scan_yyerror("No memory", yyextra->lineno);
 		}
 							 
 <xQUOTED>\\\n  {
@@ -111,11 +126,13 @@ DIGIT			[0-9]
 		}
 
 <xQUOTED>[^\\\"\n]+   {
-			addstring(yyscanner, yytext, yyleng);
+			if (addstring(yyscanner, yytext, yyleng))
+				scan_yyerror("No memory", yyextra->lineno);
 		}
 
 <xQUOTED>\n   {
-			addchar(yyscanner, yytext[0]);
+			if (addchar(yyscanner, yytext[0]))
+				scan_yyerror("No memory", yyextra->lineno);
 			yyextra->lineno++;
 		}
 
@@ -194,6 +211,7 @@ void
 prscfgScannerFinish(prscfg_yyscan_t scanner) {
 	if (buf)
 		yy_delete_buffer( buf, scanner );
+	yylex_destroy(scanner);
 	buf = NULL;
 }
 
@@ -211,25 +229,30 @@ prscfgGetLineNo(prscfg_yyscan_t yyscanner) {
 	return yyextra->lineno;
 }
 
-static void
+static int
 addstring(prscfg_yyscan_t yyscanner, char *s, int l) {
     while( yyextra->length + l + 1 >= yyextra->total ) {
 		yyextra->total *= 2;
 		yyextra->strbuf=realloc(yyextra->strbuf, yyextra->total);
 	}
+	if (!yyextra->strbuf)
+		return 1;	
 
 	memcpy( yyextra->strbuf+yyextra->length, s, l);
 	yyextra->length+=l;
+	return 0;
 }
 
-static void
+static int
 addchar(prscfg_yyscan_t yyscanner, char s) {
 	if(  yyextra->length + 2 >= yyextra->total ) {
 		yyextra->total*=2;
 		yyextra->strbuf=realloc(yyextra->strbuf, yyextra->total);
 	}
-
+	if (!yyextra->strbuf)
+		return 1;
 	yyextra->strbuf[ yyextra->length++ ] = s;
+	return 0;
 }
 																
 

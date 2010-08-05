@@ -42,6 +42,7 @@ static ParamDef	*output;
 %pure-parser
 %expect 0
 %name-prefix="prscfl_yy"
+%error-verbose
 
 %parse-param {prscfl_yyscan_t yyscanner}
 %lex-param   {prscfl_yyscan_t yyscanner}
