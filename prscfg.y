@@ -114,7 +114,7 @@ keyname:
 
 param_list:
 	param				{ $$ = $1; }
-	| param param_list	{ MakeList($$, $1, $2); }
+	| param_list param	{ MakeList($$, $2, $1); /* plainOptDef will revert the list */ }
 	;
 
 param:

@@ -1,6 +1,6 @@
-==========Accepted: 20; Skipped: 0===========
+==========Accepted: 22; Skipped: 0===========
 foo => '1234'
-bar => '-54321'
+bar => '-987654'
 asdf.k1 => 'as"d'
 asdf.k2 => 'NEWVALUE'
 asdf.array[0].qwerty => '121.9'
@@ -26,7 +26,7 @@ asdf.array[2].subarray[2].subkey => '12'
 asdf.array[2].subarray[2].subke12 => '7654'
 asdf.array[2].subarray[3].subkey => '123456789'
 asdf.array[2].subarray[3].subke12 => '7654'
-root_array[0].ra => '-1e-08'
+root_array[0].ra => '-1e-09'
 root_array[1].ra => '-1.344e-08'
 root_array[2].ra => '-1.344e-08'
 root_array[3].ra => '12'
