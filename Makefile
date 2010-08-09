@@ -7,7 +7,7 @@ FLEX=flex
 
 ARFLAGS=rcv
 LDFLAGS=-r
-CFLAGS=-Wall -g -O0 -Werror -pedantic -std=c99
+CFLAGS=-Wall -g -O0 -Werror -pedantic -std=gnu99
 INCLUDE=-I.
 LIB=
 

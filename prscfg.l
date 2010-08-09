@@ -11,6 +11,7 @@
 static int scan_yyerror(char *s, int lineno);
 static int addstring(prscfg_yyscan_t yyscanner, char *s, int l);
 static int addchar(prscfg_yyscan_t yyscanner, char s);
+static char * strdupn(char *src, size_t size);
 
 static YY_BUFFER_STATE buf = NULL;
 
@@ -51,7 +52,7 @@ DIGIT			[0-9]
 		}
 
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
 			return	KEY_P;
@@ -73,28 +74,28 @@ DIGIT			[0-9]
 	}
 
 <INITIAL>[\-\+]?{DIGIT}+ {
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+ {
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+[eE][\+\-]?{DIGIT}+ {
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
 		}
 
 <INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+[eE][\+\-]?{DIGIT}+ {
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
 			return NUMBER_P;
@@ -254,6 +255,18 @@ addchar(prscfg_yyscan_t yyscanner, char s) {
 	yyextra->strbuf[ yyextra->length++ ] = s;
 	return 0;
 }
-																
+
+static char *
+strdupn(char *src, size_t size) {
+        char    *dst = malloc(size + 1);
+
+	if (!dst)
+		return NULL;
+
+	memcpy(dst, src, size);
+	dst[size] = '\0';
+
+	return dst;
+}
 
 

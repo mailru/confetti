@@ -11,6 +11,7 @@ static int scan_yyerror(char *s, int lineno);
 static void addstring(prscfl_yyscan_t yyscanner, char *s, int l);
 static void addchar(prscfl_yyscan_t yyscanner, char s);
 
+static char * strdupn(char *src, size_t size);
 static YY_BUFFER_STATE buf = NULL;
 
 %}
@@ -43,17 +44,17 @@ DIGIT			[0-9]
 		}
 
 <INITIAL>[Rr][Oo]	{
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			return RDONLY_P;
 		}
 
 <INITIAL>[Rr][Ww]	{
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			return RDWR_P;
 		}
 
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
-			yylval->str = strndup(yytext, yyleng);
+			yylval->str = strdupn(yytext, yyleng);
 			return	KEY_P;
 		}
 
@@ -256,5 +257,17 @@ addchar(prscfl_yyscan_t yyscanner, char s) {
 	yyextra->strbuf[ yyextra->length++ ] = s;
 }
 																
+static char *
+strdupn(char *src, size_t size) {
+	char	*dst = malloc(size + 1);
+
+	if (!dst)
+		return NULL;
+	
+	memcpy(dst, src, size);
+	dst[size] = '\0';
+
+	return dst;
+}
 
 

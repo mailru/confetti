@@ -289,51 +289,43 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				if (def->rdonly) 
 					fputs("\t\tif (check_rdonly)\n\t\t\treturn -3;\n", fh);
 				fputs("\t\terrno = 0;\n", fh);
-				fputs("\t\t", fh);
-				dumpStructFullPath(fh, def, 1, 0);
 				switch(def->paramType) {
 					case	int32Type:
-						fputs(" = strtol(opt->paramValue.numberval, NULL, 10);\n", fh);
-						fputs("\t\tif (", fh);
+						fputs("\t\tlong int i32 = strtol(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tif (i32 == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( (i32 == LONG_MIN || i32 == LONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+						fputs("\t\t", fh);
 							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
-						fputs("\t\tif ( (", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == LONG_MIN || ", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == LONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+							fputs(" = i32;\n", fh);
 						break;
 					case	uint32Type:
-						fputs(" = strtoul(opt->paramValue.numberval, NULL, 10);\n", fh); 
-						fputs("\t\tif (", fh);
+						fputs("\t\tunsigned long int u32 = strtoul(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tif (u32 == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( u32 == ULONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+						fputs("\t\t", fh);
 							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
-						fputs("\t\tif ( ", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == ULONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+							fputs(" = u32;\n", fh);
 						break;
 					case	int64Type:
-						fputs(" = strtoll(opt->paramValue.numberval, NULL, 10);\n", fh); 
-						fputs("\t\tif (", fh);
+						fputs("\t\tlong long int i64 = strtoll(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tif (i64 == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( (i64 == LLONG_MIN || i64 == LLONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+						fputs("\t\t", fh);
 							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
-						fputs("\t\tif ( (", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == LLONG_MIN || ", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == LLONG_MAX) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+							fputs(" = i64;\n", fh);
 						break;
 					case	uint64Type:
-						fputs(" = strtoull(opt->paramValue.numberval, NULL, 10);\n", fh); 
-						fputs("\t\tif (", fh);
+						fputs("\t\tunsigned long long int u64 = strtoull(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tif (u64 == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
+						fputs("\t\tif ( u64 == ULLONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+						fputs("\t\t", fh);
 							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == 0 && errno == EINVAL)\n\t\t\treturn -4;\n", fh);
-						fputs("\t\tif ( ", fh);
-							dumpStructFullPath(fh, def, 1, 0);
-							fputs(" == ULLONG_MAX && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
+							fputs(" = u64;\n", fh);
 						break;
 					case	doubleType:
-						fputs(" = strtod(opt->paramValue.numberval, NULL);\n", fh); 
+						fputs("\t\t", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" = strtod(opt->paramValue.numberval, NULL);\n", fh); 
 						fputs("\t\tif ( (", fh);
 							dumpStructFullPath(fh, def, 1, 0);
 							fputs(" == 0 || ", fh);
@@ -343,7 +335,9 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							fputs(" == HUGE_VAL) && errno == ERANGE)\n\t\t\treturn -5;\n", fh);
 						break;
 					case	stringType:
-						fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
+						fputs("\t\t", fh);
+							dumpStructFullPath(fh, def, 1, 0);
+							fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
 						fputs("\t\t if (opt->paramValue.stringval && ", fh);
 							dumpStructFullPath(fh, def, 1, 0);
 							fputs(" == NULL)\n\t\t\treturn -6;\n", fh);
@@ -497,7 +491,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
-			fputt(fh, level); fputs("sprintf(*v, \"%d\", ", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%\"PRId32, ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
@@ -508,7 +502,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
-			fputt(fh, level); fputs("sprintf(*v, \"%u\", ", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%\"PRIu32, ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
@@ -519,7 +513,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
-			fputt(fh, level); fputs("sprintf(*v, \"%lld\", ", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%\"PRId64, ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
@@ -530,7 +524,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("out_warning(\"No memory to output value\");\n", fh);
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
-			fputt(fh, level); fputs("sprintf(*v, \"%llu\", ", fh);
+			fputt(fh, level); fputs("sprintf(*v, \"%\"PRIu64, ", fh);
 				dumpStructFullPath(fh, def, 0, 1);
 				fputs(");\n", fh);
 			break;
@@ -730,6 +724,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fputs(
 		"#include <errno.h>\n"
 		"#include <limits.h>\n"
+		"#include <inttypes.h>\n"
 		"#include <math.h>\n"
 		"#include <stdlib.h>\n"
 		"#include <string.h>\n"
