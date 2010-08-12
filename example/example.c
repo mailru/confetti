@@ -2,16 +2,17 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include <prscfg.h>
+#include <my_product_cfg.h>
+
 void
-out_warning(char *format, ...) {
+out_warning(ConfettyError r __attribute__ ((unused)), char *format, ...) {
     va_list args;
 
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
 }
-
-#include <my_product_cfg.h>
 
 int
 main(int argc, char* argv[]) {

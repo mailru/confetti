@@ -14,9 +14,9 @@ example_buffer_OBJS=example_buffer.o my_product_cfg.o prscfg.o
 
 all: $(NAME).cfg example example_buffer 
 
-example.c: $(NAME)_cfg.h
+example.c: $(NAME)_cfg.h prscfg.h
 
-example_buffer.c: $(NAME)_cfg.h
+example_buffer.c: $(NAME)_cfg.h prscfg.h
 
 .SUFFIXES: .o.c
 

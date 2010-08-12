@@ -34,4 +34,18 @@ typedef struct OptDef {
 OptDef* parseCfgDef(FILE *fh);
 OptDef* parseCfgDefBuffer(char *buffer);
 void 	freeCfgDef(OptDef *def);
+
+typedef	enum ConfettyError {
+	CNF_OK = 0,
+	CNF_MISSED, 
+	CNF_WRONGTYPE,
+	CNF_WRONGINDEX,
+	CNF_RDONLY,
+	CNF_WRONGINT,
+	CNF_WRONGRANGE,
+	CNF_NOMEMORY,
+	CNF_SYNTAXERROR,
+	CNF_INTERNALERROR
+} ConfettyError;
+
 #endif

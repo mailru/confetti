@@ -156,7 +156,7 @@ struct_list:
 
 static int
 prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg) {
-	out_warning("gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
+	out_warning(CNF_SYNTAXERROR, "gram_yyerror: %s at line %d\n", msg, prscfgGetLineNo(yyscanner));
 	return 0;
 }
 
@@ -167,13 +167,13 @@ cloneName(NameAtom *list, NameAtom **end) {
 	while(list) {
 		ptr = *end = malloc(sizeof(*ptr));
 		if (!ptr) {
-			out_warning("No memory");
+			out_warning(CNF_NOMEMORY, "No memory");
 			return NULL;
 		}
 		*ptr = *list;
 		ptr->name = strdup(ptr->name);
 		if (!ptr->name) {
-			out_warning("No memory");
+			out_warning(CNF_NOMEMORY, "No memory");
 			free(ptr);
 			return NULL;
 		}
@@ -246,7 +246,7 @@ plainOptDef(OptDef *def, OptDef *list) {
 			case stringType:
 				ptr = malloc(sizeof(*ptr));
 				if (!ptr) {
-					out_warning("No memory");
+					out_warning(CNF_NOMEMORY, "No memory");
 					freeCfgDef(def);
 					freeCfgDef(list);
 					return NULL;
@@ -270,7 +270,7 @@ plainOptDef(OptDef *def, OptDef *list) {
 				list = plainOptDef(def->paramValue.arrayval, list);
 				break;
 			default:
-				out_warning("Unkown paramType: %d", def->paramType);
+				out_warning(CNF_INTERNALERROR, "Unkown paramType: %d", def->paramType);
 		}
 
 		ptr = def->next;

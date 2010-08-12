@@ -2,7 +2,7 @@
 #include <prscfg.h>
 #include <my_product_cfg.h>
 
-void out_warning(char *format, ...);
+void out_warning(ConfettyError r, char *format, ...);
 
 %}
 
