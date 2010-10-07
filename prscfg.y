@@ -79,7 +79,7 @@ static OptDef	*output;
 	NameAtom	*atom;
 }
 
-%type	<atom>		identifier elem_identifier keyname 
+%type	<atom>		identifier elem_identifier keyname array_keyname
 %type	<node>		param param_list struct_list
 %type	<node>		cfg
 
@@ -111,6 +111,15 @@ keyname:
 	| elem_identifier '.' keyname	{ MakeList($$, $1, $3); }
 	;
 
+array_keyname:
+	identifier '[' NUMBER_P ']'		{ 
+			$$ = $1;
+			$$->index = atoi($3);
+			/* XXX check !*/
+			free($3);
+		}
+	| elem_identifier '.' array_keyname { MakeList($$, $1, $3); }
+	;
 
 param_list:
 	param				{ $$ = $1; }
@@ -118,12 +127,13 @@ param_list:
 	;
 
 param:
-	keyname '=' NUMBER_P			{ MakeScalarParam($$, number, $1, $3); }
-	| keyname '=' STRING_P			{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' KEY_P				{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' NULL_P			{ MakeScalarParam($$, string, $1, NULL); free($3); }
-	| keyname '=' '{' param_list '}' { MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
-	| keyname '=' '[' struct_list ']' { $4->name = $1; $$ = $4; }
+	keyname '=' NUMBER_P					{ MakeScalarParam($$, number, $1, $3); }
+	| keyname '=' STRING_P					{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' KEY_P						{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
+	| keyname '=' '{' param_list '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	| keyname '=' '[' struct_list ']' 		{ $4->name = $1; $$ = $4; }
+	| array_keyname '=' '{' param_list '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
 struct_list:
