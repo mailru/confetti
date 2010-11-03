@@ -134,7 +134,7 @@ param:
 	| keyname '=' KEY_P						{ MakeScalarParam($$, string, $1, $3); }
 	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
 	| keyname '=' '{' param_list '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
-	| keyname '=' '[' struct_list ']' 		{ $4->name = $1; $$ = $4; }
+	| keyname '=' '[' struct_list comma_opt ']' 		{ $4->name = $1; $$ = $4; }
 	| array_keyname '=' '{' param_list '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
@@ -144,7 +144,7 @@ comma_opt:
 	;
 
 struct_list:
-	'{'	param_list '}' comma_opt {
+	'{'	param_list '}' {
 			OptDef	*str;
 			NameAtom	*idx;
 
@@ -155,13 +155,13 @@ struct_list:
 			MakeScalarParam($$, array, NULL, str);
 			SetParent( $$, str );
 		}
-	| struct_list '{' param_list '}' {
+	| struct_list comma_opt '{' param_list '}' {
 			OptDef	*str;
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
-			MakeScalarParam(str, struct, idx, $3); 
-			SetParent(str, $3);
+			MakeScalarParam(str, struct, idx, $4); 
+			SetParent(str, $4);
 			SetIndex(str, $1->paramValue.arrayval->name->index + 1);
 			MakeList($1->paramValue.arrayval, str, $1->paramValue.arrayval); 
 			SetParent($1, str);
