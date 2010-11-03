@@ -62,6 +62,13 @@ DIGIT			[0-9]
 			BEGIN SCOMMENT;
 		}
 
+<INITIAL>\/[a-zA-Z0-9\.\-\\%\/_]+ {
+			yylval->str = strdupn(yytext, yyleng);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);
+			return PATH_P;
+		}
+
 <INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
 
 <INITIAL>\"	{

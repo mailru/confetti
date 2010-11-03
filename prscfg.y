@@ -84,7 +84,7 @@ static OptDef	*output;
 %type	<node>		cfg
 %type   <str>		comma_opt
 
-%token	<str>		KEY_P NULL_P STRING_P NUMBER_P
+%token	<str>		KEY_P NULL_P STRING_P NUMBER_P PATH_P
 
 %%
 
@@ -130,6 +130,7 @@ param_list:
 param:
 	keyname '=' NUMBER_P					{ MakeScalarParam($$, number, $1, $3); }
 	| keyname '=' STRING_P					{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' PATH_P					{ MakeScalarParam($$, string, $1, $3); }
 	| keyname '=' KEY_P						{ MakeScalarParam($$, string, $1, $3); }
 	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
 	| keyname '=' '{' param_list '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
