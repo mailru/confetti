@@ -82,6 +82,7 @@ static OptDef	*output;
 %type	<atom>		identifier elem_identifier keyname array_keyname
 %type	<node>		param param_list struct_list
 %type	<node>		cfg
+%type   <str>		comma_opt
 
 %token	<str>		KEY_P NULL_P STRING_P NUMBER_P
 
@@ -136,8 +137,13 @@ param:
 	| array_keyname '=' '{' param_list '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
+comma_opt:
+	','				{ $$=NULL; }
+	| /* EMPTY */	{ $$=NULL; }
+	;
+
 struct_list:
-	'{'	param_list '}'							{
+	'{'	param_list '}' comma_opt {
 			OptDef	*str;
 			NameAtom	*idx;
 
@@ -148,13 +154,13 @@ struct_list:
 			MakeScalarParam($$, array, NULL, str);
 			SetParent( $$, str );
 		}
-	| struct_list ',' '{' param_list '}' {
+	| struct_list '{' param_list '}' {
 			OptDef	*str;
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
-			MakeScalarParam(str, struct, idx, $4); 
-			SetParent(str, $4);
+			MakeScalarParam(str, struct, idx, $3); 
+			SetParent(str, $3);
 			SetIndex(str, $1->paramValue.arrayval->name->index + 1);
 			MakeList($1->paramValue.arrayval, str, $1->paramValue.arrayval); 
 			SetParent($1, str);
