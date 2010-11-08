@@ -124,7 +124,7 @@ array_keyname:
 
 param_list:
 	param				{ $$ = $1; }
-	| param_list param	{ MakeList($$, $2, $1); /* plainOptDef will revert the list */ }
+	| param_list comma_opt param	{ MakeList($$, $3, $1); /* plainOptDef will revert the list */ }
 	;
 
 param:
@@ -133,9 +133,9 @@ param:
 	| keyname '=' PATH_P					{ MakeScalarParam($$, string, $1, $3); }
 	| keyname '=' KEY_P						{ MakeScalarParam($$, string, $1, $3); }
 	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
-	| keyname '=' '{' param_list '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	| keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	| keyname '=' '[' struct_list comma_opt ']' 		{ $4->name = $1; $$ = $4; }
-	| array_keyname '=' '{' param_list '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	| array_keyname '=' '{' param_list comma_opt '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
 comma_opt:
@@ -144,7 +144,7 @@ comma_opt:
 	;
 
 struct_list:
-	'{'	param_list '}' {
+	'{' param_list comma_opt '}' {
 			OptDef	*str;
 			NameAtom	*idx;
 
@@ -155,7 +155,7 @@ struct_list:
 			MakeScalarParam($$, array, NULL, str);
 			SetParent( $$, str );
 		}
-	| struct_list comma_opt '{' param_list '}' {
+	| struct_list comma_opt '{' param_list comma_opt '}' {
 			OptDef	*str;
 			NameAtom	*idx;
 
