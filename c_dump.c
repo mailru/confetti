@@ -58,6 +58,14 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 				dumpParamDefCNameRecursive(fh, def->paramValue.structval);
 				break;
 			case	arrayType:
+				if (def->flags & PARAMDEF_REQUIRED) {
+					fputs("static NameAtom ", fh);
+					dumpParamDefCName(fh, def);
+					fputs("[] = {\n", fh);
+					dumpParamDefNameList(fh, def, def, 0);
+					fputs("};\n", fh);
+				}
+				
 				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval);
 				break;
 			default:
@@ -229,7 +237,7 @@ arrangeArray(FILE *fh, ParamDef *def) {
 
 		if (def->paramType == arrayType) {
 			int	n;
-			if (def->rdonly) 
+			if (def->flags & PARAMDEF_RDONLY) 
 				fputs("\t\tif (check_rdonly)\n\t\t\treturn CNF_RDONLY;\n", fh);
 			fputs("\t\tARRAYALLOC(", fh);
 			n = dumpStructFullPath(fh, def, 0, 0);
@@ -286,7 +294,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	doubleType:
 			case	stringType:
 				printIf(fh, def, i);
-				if (def->rdonly) 
+				if (def->flags & PARAMDEF_RDONLY) 
 					fputs("\t\tif (check_rdonly)\n\t\t\treturn CNF_RDONLY;\n", fh);
 				fputs("\t\terrno = 0;\n", fh);
 				switch(def->paramType) {
@@ -718,6 +726,175 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 	}
 }
 
+static int
+countParents(ParamDef *def) {
+	int n = 0;
+
+	while(def) {
+		n++;
+		def = def->parent;
+	}
+
+	return n;
+}
+
+static void
+dumpCheckArrayIndexes(FILE *fh, ParamDef *def, int level) {
+	ParamDef	*parent = def->parent;
+	int			i, n;
+
+	while(parent) { 
+		if (parent->paramType == arrayType) {
+			fputt(fh, level+2);
+			dumpParamDefCName(fh, def);
+
+			n = countParents(parent->parent);
+			for(i=0; i<n; i++)
+				fputs("->next", fh);
+
+			fputs("->index = i->idx", fh);
+			dumpParamDefCName(fh, parent);
+			fputs(";\n", fh);
+		}
+
+		parent = parent->parent;
+	}
+}
+
+static void
+makeOutCheck(FILE *fh, ParamDef *def, int level) {
+	fputt(fh, level+2);
+	fputs("res++;\n", fh);
+	dumpCheckArrayIndexes(fh, def, level);
+	fputt(fh, level+2);
+	fputs("out_warning(CNF_NOTSET, \"Option '%s' is not set (or has a default value)\", dumpOptDef(", fh);
+	dumpParamDefCName(fh, def);
+	fputs("));\n", fh);
+	fputt(fh, level+1);
+	fputs("}\n\n", fh);
+}
+
+static void
+makeCheck(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case	int32Type:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fprintf(fh, " == %"PRId32") {\n", def->paramValue.int32val);
+				makeOutCheck(fh, def, level);
+				break;
+			case	uint32Type:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fprintf(fh, " == %"PRIu32") {\n", def->paramValue.uint32val);
+				makeOutCheck(fh, def, level);
+				break;
+			case	int64Type:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fprintf(fh, " == %"PRId64") {\n", def->paramValue.int64val);
+				makeOutCheck(fh, def, level);
+				break;
+			case	uint64Type:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fprintf(fh, " == %"PRIu64") {\n", def->paramValue.uint64val);
+				makeOutCheck(fh, def, level);
+				break;
+			case	doubleType:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fprintf(fh, " == %g) {\n", def->paramValue.doubleval);
+				makeOutCheck(fh, def, level);
+				break;
+			case	stringType:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				if (def->paramValue.stringval == NULL) {
+					fputs("if (", fh);
+					dumpStructFullPath(fh, def, 0, 1);
+					fputs(" == NULL) {\n", fh);
+				} else {
+					char *ptr = def->paramValue.stringval;
+
+					fputs("if (strcmp(", fh);
+					dumpStructFullPath(fh, def, 0, 1);
+					fputs(", \"", fh);
+
+					while(*ptr) {
+						if (*ptr == '"')
+							fputc('\\', fh);
+						fputc(*ptr, fh);
+						ptr++;
+					}
+					fputs("\") == 0) {\n", fh);
+				}
+				makeOutCheck(fh, def, level);
+				break;
+				break;
+			case	commentType:
+				fprintf(stderr, "Unexpected comment"); 
+				break;
+			case	structType:
+				makeCheck(fh, def->paramValue.structval, level);
+				break;
+			case	arrayType:
+				if (def->flags & PARAMDEF_REQUIRED) {
+					fputt(fh, level+1);
+					fputs("if (", fh);
+					dumpStructFullPath(fh, def, 0, 1);
+					fputs(" == NULL) {\n", fh);
+					makeOutCheck(fh, def, level);
+				}
+
+				fputt(fh, level+1);
+				fputs("i->idx", fh);
+				dumpParamDefCName(fh, def);
+				fputs(" = 0;\n", fh);
+				fputt(fh, level+1);
+				fputs("while (", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs(" && ", fh);
+				dumpStructFullPath(fh, def, 0, 1);
+				fputs("[i->idx", fh);
+				dumpParamDefCName(fh, def);
+				fputs("]) {\n", fh);
+
+				makeCheck(fh, def->paramValue.arrayval, level+1);
+
+				fputt(fh, level+2);
+				fputs("i->idx", fh);
+				dumpParamDefCName(fh, def);
+				fputs("++;\n", fh);
+				fputt(fh, level+1);
+				fputs("}\n\n", fh);
+
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+		def = def->next;
+	}
+}
+
 void 
 cDump(FILE *fh, char* name, ParamDef *def) {
 	
@@ -877,6 +1054,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\t\t\t\tout_warning(r, \"Not enough memory to accept '%cs' option\", dumpOptDef(opt->name));\n"
 		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
 		"\t\t\t\tbreak;\n"
+		"\t\t\tcase CNF_NOTSET:\n"
+		"\t\t\t\tout_warning(r, \"Option '%cs' is not set (or has a default value)\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
+		"\t\t\t\tbreak;\n"
 		"\t\t\tdefault:\n"
 		"\t\t\t\tout_warning(r, \"Unknown error for '%cs' option\", dumpOptDef(opt->name));\n"
 		"\t\t\t\tif (n_skipped) (*n_skipped)++;\n"
@@ -885,7 +1066,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\t\topt = opt->next;\n"
 		"\t}\n"
 		"}\n\n"
-		, name, '%', '%', '%', '%', '%', '%', '%', '%'
+		, name, '%', '%', '%', '%', '%', '%', '%', '%', '%'
 	); 
 
 	fprintf(fh,
@@ -954,4 +1135,13 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\treturn NULL;\n"
 		"}\n\n"
 		, name, '%' );
+		
+	fprintf(fh, "/************** Checking of required fields  **************/\nint\ncheck_cfg_%s(%s *c) {\n", name, name);
+	fprintf( fh, "\t%s_iterator_t iterator, *i = &iterator;\n" , name);
+	fputs("\tint\tres = 0;\n\n", fh);
+
+	makeCheck(fh, def, 0);
+
+	fputs("\treturn res;\n}\n\n",  fh);
+
 }

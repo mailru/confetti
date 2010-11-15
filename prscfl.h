@@ -54,12 +54,15 @@ typedef struct ParamDef {
 
 	char	*name;
 
-	int		rdonly;
+	int		flags;
 
 	struct ParamDef	*comment;
 	struct ParamDef	*parent;
 	struct ParamDef	*next;
 } ParamDef;
+
+#define PARAMDEF_RDONLY			(0x01)
+#define PARAMDEF_REQUIRED		(0x02)
 
 ParamDef* parseCfgDef(FILE *fh);
 void hDump(FILE *fh, char *name, ParamDef *def);

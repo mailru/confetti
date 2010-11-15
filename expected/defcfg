@@ -9,3 +9,10 @@ asdf.array[0].substruct.sss => 'asdf.array.substruct.sss'
 asdf.array[0].subarray[0].subkey => '12'
 asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
+==========Check===========
+Option 'foo' is not set (or has a default value)
+Option 'asdf.k2' is not set (or has a default value)
+Option 'asdf.array[0].substruct.sss' is not set (or has a default value)
+Option 'asdf.array[0].subarray[0].subke12' is not set (or has a default value)
+Option 'root_array[0].ra' is not set (or has a default value)
+Missed required: 5

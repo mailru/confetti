@@ -53,6 +53,11 @@ DIGIT			[0-9]
 			return RDWR_P;
 		}
 
+<INITIAL>[Rr][Ee][Qq][Uu][Ii][Rr][Ee][Dd]	{
+			yylval->str = strdupn(yytext, yyleng);
+			return REQUIRED_P;
+		}
+
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
 			yylval->str = strdupn(yytext, yyleng);
 			return	KEY_P;

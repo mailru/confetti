@@ -5,13 +5,16 @@
 #include <prscfg.h>
 #include <my_product_cfg.h>
 
+static int useStdout = 0;
 void
 out_warning(ConfettyError r __attribute__ ((unused)), char *format, ...) {
     va_list args;
 
 	va_start(args, format);
-	vfprintf(stderr, format, args);
+	vfprintf(useStdout ? stdout : stderr, format, args);
 	va_end(args);
+	if (useStdout)
+		fputc('\n', stdout);
 }
 
 int
@@ -47,6 +50,12 @@ main(int argc, char* argv[]) {
 			printf("%s => (null)\n", key);
 		}
 	}
+
+	printf("==========Check===========\n");
+	useStdout = 1;
+	printf("Missed required: %d\n", check_cfg_my_product(&cfg));
+
+	
 
 	return 0;
 }

@@ -7,25 +7,25 @@ void out_warning(ConfettyError r, char *format, ...);
 %}
 
 # foo value is responsible1
-foo=1234U
+foo=1234U, required
 bar=-54321L
 asdf= {
 # asdfffffas asdd
 	k1 = "as\"d"
 # lkjhsdfiuher
 # =========================r
-	k2 = NULL
+	k2 = NULL, required
 	# substruct
 	array = [
 		qwerty=123.9, ro
 		qwer1=123
 		substruct = {
-			sss = "asdf.array.substruct.sss"
+			sss = "asdf.array.substruct.sss", required
 
 		}
 		subarray = [
 			subkey = 12
-			subke12 = 7654UL
+			subke12 = 7654UL, required
 		], ro
 
 	]
@@ -33,6 +33,6 @@ asdf= {
 }
 
 root_array = [
-	ra = -1.344e-08
-]
+	ra = -1.344e-08, required
+], required
 

@@ -63,10 +63,10 @@ static ParamDef	*output;
 %type	<node>		commented_param
 %type	<node>		comment
 %type	<node>		cfg
-%type	<int32val>	rdonly_opt
+%type	<int32val>	flags_opt flag flag_list
 
 %token	<str>		KEY_P NULL_P STRING_P COMMENT_P RDONLY_P RDWR_P
-					BUILTIN_P
+					BUILTIN_P REQUIRED_P 
 %token	<int32val>	INT32_P
 %token	<uint32val>	UINT32_P
 %token	<int64val>	INT64_P
@@ -91,6 +91,7 @@ identifier:
 	| NULL_P		{ $$ = $1; }
 	| RDONLY_P		{ $$ = $1; }
 	| RDWR_P		{ $$ = $1; }
+	| REQUIRED_P	{ $$ = $1; }
 	;
 
 param_list:
@@ -107,15 +108,25 @@ comment:
 		}
 	;
 
-rdonly_opt:
-	','	RDONLY_P				{ $$ = 1; }
-	| ',' RDWR_P				{ $$ = 0; }
-	| /* EMPTY */				{ $$ = 0; }
+flag:
+	RDWR_P					{ $$ = 0; }
+	| RDONLY_P				{ $$ = PARAMDEF_RDONLY; }
+	| REQUIRED_P			{ $$ = PARAMDEF_REQUIRED; }
+	;
+
+flag_list:
+	flag					{ $$ = $1; }
+	| flag_list ',' flag	{ $$ |= $3; }
+	;
+
+flags_opt:
+	','	flag_list			{ $$ = $2; }
+	| /* EMPTY */			{ $$ = 0; }
 	;
 
 commented_param:
-	param rdonly_opt			{ $$ = $1; $$->rdonly = $2; }
-	| comment param rdonly_opt 	{ $$ = $2; $$->comment = $1; $$->rdonly = $3; }
+	param flags_opt				{ $$ = $1; $$->flags = $2; }
+	| comment param flags_opt 	{ $$ = $2; $$->comment = $1; $$->flags = $3; }
 	;
 
 param:

@@ -30,3 +30,13 @@ root_array[0].ra => '-1e-09'
 root_array[1].ra => '-1.344e-08'
 root_array[2].ra => '-1.344e-08'
 root_array[3].ra => '12'
+==========Check===========
+Option 'foo' is not set (or has a default value)
+Option 'asdf.array[0].subarray[0].subke12' is not set (or has a default value)
+Option 'asdf.array[2].subarray[0].subke12' is not set (or has a default value)
+Option 'asdf.array[2].subarray[1].subke12' is not set (or has a default value)
+Option 'asdf.array[2].subarray[2].subke12' is not set (or has a default value)
+Option 'asdf.array[2].subarray[3].subke12' is not set (or has a default value)
+Option 'root_array[1].ra' is not set (or has a default value)
+Option 'root_array[2].ra' is not set (or has a default value)
+Missed required: 8
