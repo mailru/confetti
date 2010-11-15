@@ -834,7 +834,9 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				} else {
 					char *ptr = def->paramValue.stringval;
 
-					fputs("if (strcmp(", fh);
+					fputs("if (", fh);
+					dumpStructFullPath(fh, def, 0, 1);
+					fputs(" != NULL && strcmp(", fh);
 					dumpStructFullPath(fh, def, 0, 1);
 					fputs(", \"", fh);
 
