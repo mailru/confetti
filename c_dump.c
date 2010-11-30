@@ -1140,7 +1140,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"   while(y && *y) {                                                 \\\n"
 		"       l++; y++;                                                    \\\n"
 		"   }                                                                \\\n"
-		"   if ( (n) >= l ) {                                                \\\n"
+		"   if ( (n) >= (l + 1) ) {                                          \\\n"
 		"      if (_chk_ro)  return CNF_RDONLY;                              \\\n"
 		"      if ( (x) == NULL )                                            \\\n"
 		"          t = y = malloc( ((n)+1) * sizeof( __typeof__(*(x))) );    \\\n"
