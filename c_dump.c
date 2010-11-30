@@ -1340,6 +1340,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fputs("\n\treturn CNF_OK;\n", fh);
 	fputs("}\n\n", fh);
 
+	fputs("/************** Destroy config  **************/\n\n", fh);
 	fprintf(fh,
 		"void\n"
 		"destroy_%s(%s* c) {\n"
