@@ -17,6 +17,7 @@ static ParamDef	*output;
 	(r)->paramType = t##Type;				\
 	(r)->paramValue.t##val = (v);			\
 	(r)->name = (n);						\
+	(r)->comment = NULL;					\
 	(r)->parent = NULL;						\
 	(r)->next = NULL;						\
 } while(0)
