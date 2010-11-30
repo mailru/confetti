@@ -154,13 +154,15 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 
 	dumpRecursive(fh, name, &root);
 
-	fprintf(fh, "int fill_default_%s(%s *c);\n", name, name);
+	fprintf(fh, "int fill_default_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "void parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped);\n\n", name, name);
 	fprintf(fh, "void parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped);\n\n", name, name);
 	fprintf(fh, "int check_cfg_%s(%s *c);\n\n", name, name);
+	fprintf(fh, "int dup_%s(%s *dst, %s *src);\n\n", name, name, name);
+	fprintf(fh, "void destroy_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "typedef struct %s_iterator_t %s_iterator_t;\n", name, name);
 	fprintf(fh, "%s_iterator_t* %s_iterator_init();\n", name, name);
-	fprintf(fh, "char* %s_iterator_next(%s_iterator_t* i, %s *c, char **v);\n", name, name, name);
+	fprintf(fh, "char* %s_iterator_next(%s_iterator_t* i, %s *c, char **v);\n\n", name, name, name);
 
 	fputs("#endif\n", fh);
 

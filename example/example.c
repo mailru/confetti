@@ -19,7 +19,7 @@ out_warning(ConfettyError r __attribute__ ((unused)), char *format, ...) {
 
 int
 main(int argc, char* argv[]) {
-	my_product	cfg;
+	my_product	cfg, dup_cfg;
 	my_product_iterator_t	*i;
 	char		*key, *value;
 
@@ -55,7 +55,21 @@ main(int argc, char* argv[]) {
 	useStdout = 1;
 	printf("Missed required: %d\n", check_cfg_my_product(&cfg));
 
-	
+	printf("==========Dup=============\n");
+	dup_my_product(&dup_cfg, &cfg);
+	i = my_product_iterator_init();
+	while ( (key = my_product_iterator_next(i, &dup_cfg, &value)) != NULL ) {
+		if (value) {
+			printf("%s => '%s'\n", key, value);
+			free(value);
+		} else {
+			printf("%s => (null)\n", key);
+		}
+	}
+
+	printf("==========Destroy=========\n");
+	destroy_my_product(&cfg);
+	destroy_my_product(&dup_cfg);
 
 	return 0;
 }
