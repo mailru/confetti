@@ -482,6 +482,13 @@ fputt(FILE *fh, int level) {
 }
 
 static void
+fputts(FILE *fh, int level, char *str) {
+	while(level--)
+		fputc('\t', fh);
+	fputs(str, fh);
+}
+
+static void
 makeSwitchArrayList(FILE *fh, ParamDef *def, int level) {
 	while(def) {
 		switch(def->paramType) {
@@ -946,57 +953,57 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 				fputs(" == NULL ? NULL : strdup(", fh);
 				dumpStructFullPath(fh, "src", def, 1, level);
 				fputs(");\n", fh);
-				fputt(fh, level + 1);
-				fputs("if (", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "src", def, 1, level);
 				fputs(" != NULL && ", fh);
 				dumpStructFullPath(fh, "dst", def, 1, level);
-				fputs(" == NULL) return CNF_NOMEMORY;\n", fh);
+				fputs(" == NULL)\n", fh);
+					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				break;
 			case	commentType:
 				break;
 			case	structType:
+				fputs("\n", fh);
 				fputt(fh, level + 1);
 				dumpStructFullPath(fh, "dst", def, 1, level);
 				fputs(" = malloc(sizeof( *(", fh);
 				dumpStructFullPath(fh, "dst", def, 1, level);
 				fputs(") ));\n", fh);
-				fputt(fh, level + 1);
-				fputs("if (", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "dst", def, 1, level);
-				fputs(" == NULL) return CNF_NOMEMORY;\n", fh);
+				fputs(" == NULL)\n", fh);
+					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				makeDup(fh, def->paramValue.structval, level);
 				break;
 			case	arrayType:
+				fputs("\n", fh);
 				fputt(fh, level + 1);
 				dumpStructFullPath(fh, "dst", def, 0, 1);
 				fputs(" = NULL;\n", fh);
-				fputt(fh, level + 1);
-				fputs("i->idx", fh);
-				dumpParamDefCName(fh, def);
-				fputs(" = 0;\n", fh);
-				fputt(fh, level + 1);
-				fputs("while (", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "src", def, 0, 1);
-				fputs(" != NULL && ", fh);
-				dumpStructFullPath(fh, "src", def, 1, 1);
 				fputs(" != NULL) {\n", fh);
-				fputt(fh, level + 1);
-				fputs("\tARRAYALLOC(", fh);
-				dumpStructFullPath(fh, "dst", def, 0, 1);
-				fputs(", ", fh);
-				fputs("i->idx", fh);
-				dumpParamDefCName(fh, def);
-				fputs(" + 1, ", fh);
-				dumpParamDefCName(fh, def);
-				fputs(", 0);\n", fh);
-				makeDup(fh, def->paramValue.arrayval, level + 1);
-				fputt(fh, level + 1);
-				fputs("\ti->idx", fh);
-				dumpParamDefCName(fh, def);
-				fputs("++;\n", fh);
-				fputt(fh, level + 1);
-				fputs("}\n", fh);
+					fputts(fh, level + 1, "\ti->idx");
+					dumpParamDefCName(fh, def);
+					fputs(" = 0;\n", fh);
+					fputts(fh, level + 1, "\twhile (");
+					dumpStructFullPath(fh, "src", def, 1, 1);
+					fputs(" != NULL) {\n", fh);
+						fputts(fh, level + 1, "\t\tARRAYALLOC(");
+						dumpStructFullPath(fh, "dst", def, 0, 1);
+						fputs(", ", fh);
+						fputs("i->idx", fh);
+						dumpParamDefCName(fh, def);
+						fputs(" + 1, ", fh);
+						dumpParamDefCName(fh, def);
+						fputs(", 0);\n\n", fh);
+						makeDup(fh, def->paramValue.arrayval, level + 2);
+						fputs("\n", fh);
+						fputts(fh, level + 1, "\t\ti->idx");
+						dumpParamDefCName(fh, def);
+						fputs("++;\n", fh);
+					fputts(fh, level + 1, "\t}\n");
+				fputts(fh, level + 1, "}\n");
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -1019,44 +1026,48 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 			case	commentType:
 				break;
 			case	stringType:
-				fputt(fh, level + 1);
-				fputs("if (", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "c", def, 1, level);
-				fputs(" != NULL) free(", fh);
-				dumpStructFullPath(fh, "c", def, 1, level);
-				fputs(");\n", fh);
+				fputs(" != NULL)\n", fh);
+					fputts(fh, level + 1, "\tfree(");
+					dumpStructFullPath(fh, "c", def, 1, level);
+					fputs(");\n", fh);
 				break;
 			case	structType:
-				makeDestroy(fh, def->paramValue.structval, level);
-				fputt(fh, level + 1);
-				fputs("free(", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "c", def, 1, level);
-				fputs(");\n", fh);
+				fputs(" != NULL) {\n", fh);
+					makeDestroy(fh, def->paramValue.structval, level + 1);
+					fputs("\n", fh);
+					fputts(fh, level + 1, "\tfree(");
+					dumpStructFullPath(fh, "c", def, 1, level);
+					fputs(");\n", fh);
+				fputts(fh, level + 1, "}\n");
 				break;
 			case	arrayType:
-				fputt(fh, level + 1);
-				fputs("i->idx", fh);
-				dumpParamDefCName(fh, def);
-				fputs(" = 0;\n", fh);
-				fputt(fh, level + 1);
-				fputs("while (", fh);
+				fputs("\n", fh);
+				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "c", def, 0, 1);
-				fputs(" != NULL && ", fh);
-				dumpStructFullPath(fh, "c", def, 1, 1);
 				fputs(" != NULL) {\n", fh);
-				makeDestroy(fh, def->paramValue.arrayval, level + 1);
-				fputt(fh, level + 1);
-				fputs("\ti->idx", fh);
-				dumpParamDefCName(fh, def);
-				fputs("++;\n", fh);
-				fputt(fh, level + 1);
-				fputs("}\n", fh);
-				fputt(fh, level + 1);
-				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
-				fputs(" != NULL) free(", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
-				fputs(");\n", fh);
+					fputts(fh, level + 1, "\ti->idx");
+					dumpParamDefCName(fh, def);
+					fputs(" = 0;\n", fh);
+					fputts(fh, level + 1, "\twhile (");
+					dumpStructFullPath(fh, "c", def, 1, 1);
+					fputs(" != NULL) {\n", fh);
+						makeDestroy(fh, def->paramValue.arrayval, level + 2);
+						fputs("\n", fh);
+						fputts(fh, level + 1, "\t\tfree(");
+						dumpStructFullPath(fh, "c", def, 1, 1);
+						fputs(");\n\n", fh);
+						fputts(fh, level + 1, "\t\ti->idx");
+						dumpParamDefCName(fh, def);
+						fputs("++;\n", fh);
+					fputts(fh, level + 1, "\t}\n\n");
+					fputts(fh, level + 1, "\tfree(");
+					dumpStructFullPath(fh, "c", def, 0, 1);
+					fputs(");\n", fh);
+				fputts(fh, level + 1, "}\n");
 				break;
 
 			default:
@@ -1326,7 +1337,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh,
 		"\t%s_iterator_t iterator, *i = &iterator;\n\n", name);
 	makeDup(fh, def, 0);
-	fputs("\treturn CNF_OK;\n", fh);
+	fputs("\n\treturn CNF_OK;\n", fh);
 	fputs("}\n\n", fh);
 
 	fprintf(fh,
