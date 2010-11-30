@@ -1331,7 +1331,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs("/************** Duplicate config  **************/\n\n", fh);
 	fprintf(fh,
-		"ConfettyError\n"
+		"int\n"
 		"dup_%s(%s* dst, %s* src) {\n"
 		, name, name, name);
 	fprintf(fh,
