@@ -102,6 +102,7 @@ dumpStruct(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh, "typedef struct %s", name);
 	dumpStructName(fh, list, "_");
 	fputs(" {\n", fh);
+	fputs("\tunsigned char __confetti_flags;\n\n", fh);
 	dumpParamList(fh, name, list);
 	fprintf(fh, "} %s", name);
 	dumpStructName(fh, list, "_");

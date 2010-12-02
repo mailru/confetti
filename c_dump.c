@@ -237,16 +237,25 @@ arrangeArray(FILE *fh, ParamDef *def) {
 
 		if (def->paramType == arrayType) {
 			int	n;
-			fputs("\t\tARRAYALLOC(", fh);
+			fputs("\t\tif (", fh);
+			fputs("ARRAYALLOC(", fh);
 			n = dumpStructFullPath(fh, "c", def, 0, 0);
 			fputs(", ", fh);
 			dumpArrayIndex(fh, n-1);
 			fputs(" + 1, ", fh);
 			dumpParamDefCName(fh, def);
 			if (def->flags & PARAMDEF_RDONLY)
-				fputs(", check_rdonly);\n", fh);
+				fputs(", check_rdonly)", fh);
 			else
-				fputs(", 0);\n", fh);
+				fputs(", 0)", fh);
+			fputs(" != 0)\n", fh);
+				fputs("\t\t\t", fh);
+				dumpStructFullPath(fh, "c", def, 1, 0);
+				fputs("->__confetti_flags |= CNF_FLAG_STRUCT_NEW;\n", fh);
+			fputs("\t\tif (", fh);
+			dumpStructFullPath(fh, "c", def, 1, 0);
+			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
+				fputs("\t\t\tcheck_rdonly = 0;\n", fh);
 		}
 	}
 }
@@ -1133,8 +1142,9 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs(
 		"\n"
-		"#define ARRAYALLOC(x,n,t,_chk_ro)  do {                             \\\n"
+		"#define ARRAYALLOC(x,n,t,_chk_ro) ({                                \\\n"
 		"   int l = 0, ar;                                                   \\\n"
+		"   int was_realloced = 0;                                           \\\n"
 		"   __typeof__(x) y = (x), t;                                        \\\n"
 		"   if ( (n) <= 0 ) return CNF_WRONGINDEX; /* wrong index */         \\\n"
 		"   while(y && *y) {                                                 \\\n"
@@ -1157,8 +1167,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"          if ( (ar = acceptDefault##t(*y)) != 0 ) return ar;        \\\n"
 		"          y++;                                                      \\\n"
 		"      }                                                             \\\n"
+		"      was_realloced = 1;                                            \\\n"
 		"   }                                                                \\\n"
-		"} while(0)\n\n"
+		"   was_realloced;                                                   \\\n"
+		"})\n\n"
 		, fh
 	);
 
