@@ -67,6 +67,16 @@ main(int argc, char* argv[]) {
 		}
 	}
 
+	printf("==========Compare=========\n");
+	if (cmp_my_product(&cfg, &dup_cfg, 0) != 0)
+		printf("total: differ\n");
+	else
+		printf("total: equal\n");
+	if (cmp_my_product(&cfg, &dup_cfg, 1) != 0)
+		printf("only_rdonly: differ\n");
+	else
+		printf("only_rdonly: equal\n");
+
 	printf("==========Destroy=========\n");
 	destroy_my_product(&cfg);
 	destroy_my_product(&dup_cfg);

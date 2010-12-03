@@ -161,6 +161,7 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh, "int check_cfg_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "int dup_%s(%s *dst, %s *src);\n\n", name, name, name);
 	fprintf(fh, "void destroy_%s(%s *c);\n\n", name, name);
+	fprintf(fh, "char *cmp_%s(%s* c1, %s* c2, int only_check_rdonly)\n\n;", name, name, name);
 	fprintf(fh, "typedef struct %s_iterator_t %s_iterator_t;\n", name, name);
 	fprintf(fh, "%s_iterator_t* %s_iterator_init();\n", name, name);
 	fprintf(fh, "char* %s_iterator_next(%s_iterator_t* i, %s *c, char **v);\n\n", name, name, name);
