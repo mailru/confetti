@@ -951,23 +951,23 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	uint64Type:
 			case	doubleType:
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
-				dumpStructFullPath(fh, "src", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(";\n", fh);
 				break;
 			case	stringType:
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
-				dumpStructFullPath(fh, "src", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(" == NULL ? NULL : strdup(", fh);
-				dumpStructFullPath(fh, "src", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(");\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "src", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(" != NULL && ", fh);
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" == NULL)\n", fh);
 					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				break;
@@ -976,12 +976,12 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	structType:
 				fputs("\n", fh);
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = malloc(sizeof( *(", fh);
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(") ));\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "dst", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" == NULL)\n", fh);
 					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				makeDup(fh, def->paramValue.structval, level);
@@ -1038,20 +1038,20 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 				break;
 			case	stringType:
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 				fputs(" != NULL)\n", fh);
 					fputts(fh, level + 1, "\tfree(");
-					dumpStructFullPath(fh, "c", "i", def, 1, level, 1);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(");\n", fh);
 				break;
 			case	structType:
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c", "i", def, 1, level, 1);
+				dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 				fputs(" != NULL) {\n", fh);
 					makeDestroy(fh, def->paramValue.structval, level + 1);
 					fputs("\n", fh);
 					fputts(fh, level + 1, "\tfree(");
-					dumpStructFullPath(fh, "c", "i", def, 1, level, 1);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(");\n", fh);
 				fputts(fh, level + 1, "}\n");
 				break;
@@ -1105,12 +1105,12 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 				}
 
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c1", "i1", def, 1, level, 1);
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
 				fputs(" != ", fh);
-				dumpStructFullPath(fh, "c2", "i2", def, 1, level, 1);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
 				fputs(") {\n", fh);
 					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
-					dumpStructFullPath(fh, "c", "i", def, 1, level, 0);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
 					fputs("\");\n\n", fh);
 					fputts(fh, level + 1, "\treturn diff;\n");
 				fputts(fh, level + 1, "}\n");
@@ -1129,12 +1129,12 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 				}
 
 				fputts(fh, level + 1, "if (confetti_strcmp(");
-				dumpStructFullPath(fh, "c1", "i1", def, 1, level, 1);
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
 				fputs(", ", fh);
-				dumpStructFullPath(fh, "c2", "i2", def, 1, level, 1);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
 				fputs(") != 0) {\n", fh);
 					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
-					dumpStructFullPath(fh, "c", "i", def, 1, level, 0);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
 					fputs("\");\n\n", fh);
 					fputts(fh, level + 1, "\treturn diff;\n");
 				fputs("}\n", fh);
@@ -1195,7 +1195,7 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
 				fputs(" != NULL)) {\n", fh);
 					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
-					dumpStructFullPath(fh, "c", "i", def, 1, level, 0);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
 					fputs("\");\n\n", fh);
 					fputts(fh, level + 1, "\treturn diff;\n");
 				fputs("}\n", fh);
