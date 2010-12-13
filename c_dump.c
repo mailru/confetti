@@ -1244,7 +1244,7 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
 					fputs("\");\n\n", fh);
 					fputts(fh, level + 1, "\treturn diff;\n");
-				fputs("}\n", fh);
+				fputts(fh, level + 1, "}\n");
 
 				if (!(def->flags & PARAMDEF_RDONLY)) {
 					level--;
