@@ -239,21 +239,16 @@ arrangeArray(FILE *fh, ParamDef *def) {
 
 		if (def->paramType == arrayType) {
 			int	n;
-			fputs("\t\tif (", fh);
-			fputs("ARRAYALLOC(", fh);
+			fputs("\t\tARRAYALLOC(", fh);
 			n = dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
 			fputs(", ", fh);
 			dumpArrayIndex(fh, n-1);
 			fputs(" + 1, ", fh);
 			dumpParamDefCName(fh, def);
 			if (def->flags & PARAMDEF_RDONLY)
-				fputs(", check_rdonly)", fh);
+				fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW);\n", fh);
 			else
-				fputs(", 0)", fh);
-			fputs(" != 0)\n", fh);
-				fputs("\t\t\t", fh);
-				dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
-				fputs("->__confetti_flags |= CNF_FLAG_STRUCT_NEW;\n", fh);
+				fputs(", 0, CNF_FLAG_STRUCT_NEW);\n", fh);
 			fputs("\t\tif (", fh);
 			dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
@@ -942,6 +937,57 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 }
 
 static void
+makeCleanFlags(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				break;
+			case	commentType:
+				break;
+			case	structType:
+				fputt(fh, level + 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fputs("->__confetti_flags = 0;\n", fh);
+
+				makeCleanFlags(fh, def->paramValue.structval, level);
+				break;
+			case	arrayType:
+				fputs("\n", fh);
+				fputts(fh, level + 1, "if (");
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fputs(" != NULL) {\n", fh);
+					fputts(fh, level + 1, "\ti->idx");
+					dumpParamDefCName(fh, def);
+					fputs(" = 0;\n", fh);
+					fputts(fh, level + 1, "\twhile (");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
+					fputs(" != NULL) {\n", fh);
+						fputt(fh, level + 1);
+						dumpStructFullPath(fh, "\t\tc", "i", def, 1, 1, 1);
+						fputs("->__confetti_flags = 0;\n\n", fh);
+						makeCleanFlags(fh, def->paramValue.arrayval, level + 2);
+						fputs("\n", fh);
+						fputts(fh, level + 1, "\t\ti->idx");
+						dumpParamDefCName(fh, def);
+						fputs("++;\n", fh);
+					fputts(fh, level + 1, "\t}\n");
+				fputts(fh, level + 1, "}\n");
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
+static void
 makeDup(FILE *fh, ParamDef *def, int level) {
 	while(def) {
 		switch(def->paramType) {
@@ -1007,7 +1053,7 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 						dumpParamDefCName(fh, def);
 						fputs(" + 1, ", fh);
 						dumpParamDefCName(fh, def);
-						fputs(", 0);\n\n", fh);
+						fputs(", 0, 0);\n\n", fh);
 						makeDup(fh, def->paramValue.arrayval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
@@ -1269,9 +1315,8 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs(
 		"\n"
-		"#define ARRAYALLOC(x,n,t,_chk_ro) ({                                \\\n"
+		"#define ARRAYALLOC(x,n,t,_chk_ro, __flags)  do {                    \\\n"
 		"   int l = 0, ar;                                                   \\\n"
-		"   int was_realloced = 0;                                           \\\n"
 		"   __typeof__(x) y = (x), t;                                        \\\n"
 		"   if ( (n) <= 0 ) return CNF_WRONGINDEX; /* wrong index */         \\\n"
 		"   while(y && *y) {                                                 \\\n"
@@ -1292,12 +1337,11 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"          *y = malloc( sizeof( __typeof__(**(x))) );                \\\n"
 		"          if (*y == NULL)  return CNF_NOMEMORY;                     \\\n"
 		"          if ( (ar = acceptDefault##t(*y)) != 0 ) return ar;        \\\n"
+		"          (*y)->__confetti_flags |= __flags;		             \\\n"
 		"          y++;                                                      \\\n"
 		"      }                                                             \\\n"
-		"      was_realloced = 1;                                            \\\n"
 		"   }                                                                \\\n"
-		"   was_realloced;                                                   \\\n"
-		"})\n\n"
+		"} while(0)\n\n"
 		, fh
 	);
 
@@ -1316,6 +1360,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"}\n\n",
 		fh
 	);
+
+	fprintf(fh,
+		"static void cleanFlags(%s* c, OptDef* opt);\n\n"
+		, name);
 
 	fputs(
 		"#define PRINTBUFLEN	8192\n"
@@ -1340,7 +1388,8 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh,
 		"static void\n"
 		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
-		"\tConfettyError	r;\n\n"
+		"\tConfettyError	r;\n"
+		"\tOptDef		*orig_opt = opt;\n\n"
 		"\tif (n_accepted) *n_accepted=0;\n"
 		"\tif (n_skipped) *n_skipped=0;\n"
 		"\n"
@@ -1389,6 +1438,8 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\t\t}\n\n"
 		"\t\topt = opt->next;\n"
 		"\t}\n"
+		"\n"
+		"\tcleanFlags(c, orig_opt);\n"
 		"}\n\n"
 		, name, '%', '%', '%', '%', '%', '%', '%', '%', '%'
 	); 
@@ -1467,6 +1518,18 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	makeCheck(fh, def, 0);
 
 	fputs("\treturn res;\n}\n\n",  fh);
+
+	fprintf(fh,
+		"static void\n"
+		"cleanFlags(%s* c, OptDef* opt) {\n"
+		, name);
+	fprintf(fh,
+		"\t%s_iterator_t iterator, *i = &iterator;\n\n", name);
+	makeCleanFlags(fh, def, 0);
+	fputs(
+		"}\n\n",
+		fh
+	);
 
 	fputs("/************** Duplicate config  **************/\n\n", fh);
 	fprintf(fh,
