@@ -209,18 +209,20 @@ dumpArrayIndex(FILE *fh, int n) {
 }
 
 static int
-dumpStructFullPath(FILE *fh, char *name, ParamDef *def, int innerCall, int isiterator) {
+dumpStructFullPath(FILE *fh, char *name, char *itername, ParamDef *def, int innerCall, int isiterator, int show_index) {
 	if (def) {
-		int n = dumpStructFullPath(fh, name, def->parent, 1, isiterator);
+		int n = dumpStructFullPath(fh, name, itername, def->parent, 1, isiterator, show_index);
 		fputs("->", fh);
 		fputs(def->name, fh);
 		if (def->paramType == arrayType && innerCall) {
 			fputs("[", fh);
-			if (isiterator) {
-				fputs("i->idx", fh);
-				dumpParamDefCName(fh, def);	
-			} else
-				dumpArrayIndex(fh, n);
+			if (show_index) {
+				if (isiterator) {
+					fprintf(fh, "%s->idx", itername);
+					dumpParamDefCName(fh, def);
+				} else
+					dumpArrayIndex(fh, n);
+			}
 			fputs("]", fh);
 		}
 		return n + 1;
@@ -238,15 +240,19 @@ arrangeArray(FILE *fh, ParamDef *def) {
 		if (def->paramType == arrayType) {
 			int	n;
 			fputs("\t\tARRAYALLOC(", fh);
-			n = dumpStructFullPath(fh, "c", def, 0, 0);
+			n = dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
 			fputs(", ", fh);
 			dumpArrayIndex(fh, n-1);
 			fputs(" + 1, ", fh);
 			dumpParamDefCName(fh, def);
 			if (def->flags & PARAMDEF_RDONLY)
-				fputs(", check_rdonly);\n", fh);
+				fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW);\n", fh);
 			else
-				fputs(", 0);\n", fh);
+				fputs(", 0, CNF_FLAG_STRUCT_NEW);\n", fh);
+			fputs("\t\tif (", fh);
+			dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
+			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
+				fputs("\t\t\tcheck_rdonly = 0;\n", fh);
 		}
 	}
 }
@@ -286,7 +292,7 @@ static int
 makeAccept(FILE *fh, ParamDef *def, int i) {
 
 	while(def) {
-		
+
 		switch(def->paramType) {
 			case	int32Type:
 			case	uint32Type:
@@ -303,11 +309,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif ( (i32 == LONG_MIN || i32 == LONG_MAX) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" != i32)\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = i32;\n", fh);
 						break;
 					case	uint32Type:
@@ -316,11 +322,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif ( u32 == ULONG_MAX && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" != u32)\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = u32;\n", fh);
 						break;
 					case	int64Type:
@@ -329,11 +335,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif ( (i64 == LLONG_MIN || i64 == LLONG_MAX) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" != i64)\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = i64;\n", fh);
 						break;
 					case	uint64Type:
@@ -342,11 +348,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif ( u64 == ULLONG_MAX && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" != u64)\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = u64;\n", fh);
 						break;
 					case	doubleType:
@@ -354,26 +360,26 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif ( (dbl == 0 || dbl == -HUGE_VAL || dbl == HUGE_VAL) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" != dbl)\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = dbl;\n", fh);
 						break;
 					case	stringType:
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ( (opt->paramValue.stringval == NULL && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" == NULL) || strcmp(opt->paramValue.stringval, ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(") != 0))\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
 						fputs("\t\t", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
 						fputs("\t\tif (opt->paramValue.stringval && ", fh);
-							dumpStructFullPath(fh, "c", def, 1, 0);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" == NULL)\n\t\t\treturn CNF_NOMEMORY;\n", fh);
 					default:
 						break;
@@ -533,7 +539,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%\"PRId32, ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(");\n", fh);
 			break;
 		case	uint32Type:
@@ -544,7 +550,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%\"PRIu32, ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(");\n", fh);
 			break;
 		case	int64Type:
@@ -555,7 +561,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%\"PRId64, ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(");\n", fh);
 			break;
 		case	uint64Type:
@@ -566,7 +572,7 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%\"PRIu64, ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(");\n", fh);
 			break;
 		case	doubleType:
@@ -577,17 +583,17 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%g\", ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(");\n", fh);
 			break;
 		case	stringType:
 			fputt(fh, level); fputs("*v = (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(") ? strdup(", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(") : NULL;\n", fh);
 			fputt(fh, level); fputs("if (*v == NULL && ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(") {\n", fh);
 			fputt(fh, level+1); fputs("free(i);\n",fh); 
 			fputt(fh, level+1); fputs("out_warning(CNF_NOMEMORY, \"No memory to output value\");\n", fh);
@@ -720,9 +726,9 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 				fputs(";\n", fh);
 				makeSwitchArrayList(fh, def->paramValue.arrayval, level);
 				fputt(fh, level+3); fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(" && ", fh);
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs("[i->idx", fh);
 					dumpParamDefCName(fh, def);
 					fputs("]) {\n", fh);
@@ -816,7 +822,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 					break;
 				fputt(fh, level+1);
 				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fprintf(fh, " == %"PRId32") {\n", def->paramValue.int32val);
 				makeOutCheck(fh, def, level);
 				break;
@@ -825,7 +831,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 					break;
 				fputt(fh, level+1);
 				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fprintf(fh, " == %"PRIu32") {\n", def->paramValue.uint32val);
 				makeOutCheck(fh, def, level);
 				break;
@@ -834,7 +840,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 					break;
 				fputt(fh, level+1);
 				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fprintf(fh, " == %"PRId64") {\n", def->paramValue.int64val);
 				makeOutCheck(fh, def, level);
 				break;
@@ -843,7 +849,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 					break;
 				fputt(fh, level+1);
 				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fprintf(fh, " == %"PRIu64") {\n", def->paramValue.uint64val);
 				makeOutCheck(fh, def, level);
 				break;
@@ -852,7 +858,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 					break;
 				fputt(fh, level+1);
 				fputs("if (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fprintf(fh, " == %g) {\n", def->paramValue.doubleval);
 				makeOutCheck(fh, def, level);
 				break;
@@ -862,15 +868,15 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				fputt(fh, level+1);
 				if (def->paramValue.stringval == NULL) {
 					fputs("if (", fh);
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(" == NULL) {\n", fh);
 				} else {
 					char *ptr = def->paramValue.stringval;
 
 					fputs("if (", fh);
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(" != NULL && strcmp(", fh);
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(", \"", fh);
 
 					while(*ptr) {
@@ -894,7 +900,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				if (def->flags & PARAMDEF_REQUIRED) {
 					fputt(fh, level+1);
 					fputs("if (", fh);
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(" == NULL) {\n", fh);
 					makeOutCheck(fh, def, level);
 				}
@@ -905,9 +911,9 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				fputs(" = 0;\n", fh);
 				fputt(fh, level+1);
 				fputs("while (", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(" && ", fh);
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs("[i->idx", fh);
 				dumpParamDefCName(fh, def);
 				fputs("]) {\n", fh);
@@ -931,6 +937,57 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 }
 
 static void
+makeCleanFlags(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+			case	stringType:
+				break;
+			case	commentType:
+				break;
+			case	structType:
+				fputt(fh, level + 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fputs("->__confetti_flags = 0;\n", fh);
+
+				makeCleanFlags(fh, def->paramValue.structval, level);
+				break;
+			case	arrayType:
+				fputs("\n", fh);
+				fputts(fh, level + 1, "if (");
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fputs(" != NULL) {\n", fh);
+					fputts(fh, level + 1, "\ti->idx");
+					dumpParamDefCName(fh, def);
+					fputs(" = 0;\n", fh);
+					fputts(fh, level + 1, "\twhile (");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
+					fputs(" != NULL) {\n", fh);
+						fputt(fh, level + 1);
+						dumpStructFullPath(fh, "\t\tc", "i", def, 1, 1, 1);
+						fputs("->__confetti_flags = 0;\n\n", fh);
+						makeCleanFlags(fh, def->paramValue.arrayval, level + 2);
+						fputs("\n", fh);
+						fputts(fh, level + 1, "\t\ti->idx");
+						dumpParamDefCName(fh, def);
+						fputs("++;\n", fh);
+					fputts(fh, level + 1, "\t}\n");
+				fputts(fh, level + 1, "}\n");
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
+static void
 makeDup(FILE *fh, ParamDef *def, int level) {
 	while(def) {
 		switch(def->paramType) {
@@ -940,23 +997,23 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	uint64Type:
 			case	doubleType:
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
-				dumpStructFullPath(fh, "src", def, 1, level);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(";\n", fh);
 				break;
 			case	stringType:
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
-				dumpStructFullPath(fh, "src", def, 1, level);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(" == NULL ? NULL : strdup(", fh);
-				dumpStructFullPath(fh, "src", def, 1, level);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(");\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "src", def, 1, level);
+				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 				fputs(" != NULL && ", fh);
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" == NULL)\n", fh);
 					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				break;
@@ -965,12 +1022,12 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	structType:
 				fputs("\n", fh);
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = malloc(sizeof( *(", fh);
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(") ));\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "dst", def, 1, level);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" == NULL)\n", fh);
 					fputts(fh, level + 1, "\treturn CNF_NOMEMORY;\n");
 				makeDup(fh, def->paramValue.structval, level);
@@ -978,25 +1035,25 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	arrayType:
 				fputs("\n", fh);
 				fputt(fh, level + 1);
-				dumpStructFullPath(fh, "dst", def, 0, 1);
+				dumpStructFullPath(fh, "dst", "i", def, 0, 1, 1);
 				fputs(" = NULL;\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "src", def, 0, 1);
+				dumpStructFullPath(fh, "src", "i", def, 0, 1, 1);
 				fputs(" != NULL) {\n", fh);
 					fputts(fh, level + 1, "\ti->idx");
 					dumpParamDefCName(fh, def);
 					fputs(" = 0;\n", fh);
 					fputts(fh, level + 1, "\twhile (");
-					dumpStructFullPath(fh, "src", def, 1, 1);
+					dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 					fputs(" != NULL) {\n", fh);
 						fputts(fh, level + 1, "\t\tARRAYALLOC(");
-						dumpStructFullPath(fh, "dst", def, 0, 1);
+						dumpStructFullPath(fh, "dst", "i", def, 0, 1, 1);
 						fputs(", ", fh);
 						fputs("i->idx", fh);
 						dumpParamDefCName(fh, def);
 						fputs(" + 1, ", fh);
 						dumpParamDefCName(fh, def);
-						fputs(", 0);\n\n", fh);
+						fputs(", 0, 0);\n\n", fh);
 						makeDup(fh, def->paramValue.arrayval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
@@ -1027,45 +1084,45 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 				break;
 			case	stringType:
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c", def, 1, level);
+				dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 				fputs(" != NULL)\n", fh);
 					fputts(fh, level + 1, "\tfree(");
-					dumpStructFullPath(fh, "c", def, 1, level);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(");\n", fh);
 				break;
 			case	structType:
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c", def, 1, level);
+				dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 				fputs(" != NULL) {\n", fh);
 					makeDestroy(fh, def->paramValue.structval, level + 1);
 					fputs("\n", fh);
 					fputts(fh, level + 1, "\tfree(");
-					dumpStructFullPath(fh, "c", def, 1, level);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(");\n", fh);
 				fputts(fh, level + 1, "}\n");
 				break;
 			case	arrayType:
 				fputs("\n", fh);
 				fputts(fh, level + 1, "if (");
-				dumpStructFullPath(fh, "c", def, 0, 1);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(" != NULL) {\n", fh);
 					fputts(fh, level + 1, "\ti->idx");
 					dumpParamDefCName(fh, def);
 					fputs(" = 0;\n", fh);
 					fputts(fh, level + 1, "\twhile (");
-					dumpStructFullPath(fh, "c", def, 1, 1);
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(" != NULL) {\n", fh);
 						makeDestroy(fh, def->paramValue.arrayval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\tfree(");
-						dumpStructFullPath(fh, "c", def, 1, 1);
+						dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 						fputs(");\n\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
 						dumpParamDefCName(fh, def);
 						fputs("++;\n", fh);
 					fputts(fh, level + 1, "\t}\n\n");
 					fputts(fh, level + 1, "\tfree(");
-					dumpStructFullPath(fh, "c", def, 0, 1);
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(");\n", fh);
 				fputts(fh, level + 1, "}\n");
 				break;
@@ -1079,9 +1136,134 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 	}
 }
 
+static void
+makeCmp(FILE *fh, ParamDef *def, int level) {
+	while(def) {
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					fputts(fh, level + 1, "if (!only_check_rdonly) {\n");
+					level++;
+				}
+
+				fputts(fh, level + 1, "if (");
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
+				fputs(" != ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
+				fputs(") {\n", fh);
+					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
+					fputs("\");\n\n", fh);
+					fputts(fh, level + 1, "\treturn diff;\n");
+				fputts(fh, level + 1, "}\n");
+
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					level--;
+					fputts(fh, level + 1, "}\n");
+				}
+				break;
+			case	commentType:
+				break;
+			case	stringType:
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					fputts(fh, level + 1, "if (!only_check_rdonly) {\n");
+					level++;
+				}
+
+				fputts(fh, level + 1, "if (confetti_strcmp(");
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
+				fputs(", ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
+				fputs(") != 0) {\n", fh);
+					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
+					fputs("\");\n\n", fh);
+					fputts(fh, level + 1, "\treturn diff;\n");
+				fputs("}\n", fh);
+
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					level--;
+					fputts(fh, level + 1, "}\n");
+				}
+				break;
+			case	structType:
+				makeCmp(fh, def->paramValue.structval, level);
+				break;
+			case	arrayType:
+				fputs("\n", fh);
+				fputts(fh, level + 1, "i1->idx");
+				dumpParamDefCName(fh, def);
+				fputs(" = 0;\n", fh);
+				fputts(fh, level + 1, "i2->idx");
+				dumpParamDefCName(fh, def);
+				fputs(" = 0;\n", fh);
+				fputts(fh, level + 1, "while (");
+				dumpStructFullPath(fh, "c1", "i1", def, 0, 1, 1);
+				fputs(" != NULL && ", fh);
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
+				fputs(" != NULL && ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 0, 1, 1);
+				fputs(" != NULL && " , fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
+				fputs(" != NULL) {\n", fh);
+					makeCmp(fh, def->paramValue.arrayval, level + 1);
+					fputs("\n", fh);
+					fputts(fh, level + 1, "\ti1->idx");
+					dumpParamDefCName(fh, def);
+					fputs("++;\n", fh);
+					fputts(fh, level + 1, "\ti2->idx");
+					dumpParamDefCName(fh, def);
+					fputs("++;\n", fh);
+				fputts(fh, level + 1, "}\n");
+
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					fputts(fh, level + 1, "if (!only_check_rdonly) {\n");
+					level++;
+				}
+
+				fputts(fh, level + 1, "if (!(");
+				dumpStructFullPath(fh, "c1", "i1", def, 0, 1, 1);
+				fputs(" == ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 0, 1, 1);
+				fputs(" && ", fh);
+				dumpStructFullPath(fh, "c1", "i1", def, 0, 1, 1);
+				fputs(" == NULL) && (", fh);
+				dumpStructFullPath(fh, "c1", "i1", def, 0, 1, 1);
+				fputs(" == NULL || ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 0, 1, 1);
+				fputs(" == NULL || ", fh);
+				dumpStructFullPath(fh, "c1", "i1", def, 1, 1, 1);
+				fputs(" != NULL || ", fh);
+				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
+				fputs(" != NULL)) {\n", fh);
+					fputts(fh, level + 1, "\tsnprintf(diff, PRINTBUFLEN - 1, \"%s\", \"");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 0);
+					fputs("\");\n\n", fh);
+					fputts(fh, level + 1, "\treturn diff;\n");
+				fputts(fh, level + 1, "}\n");
+
+				if (!(def->flags & PARAMDEF_RDONLY)) {
+					level--;
+					fputts(fh, level + 1, "}\n");
+				}
+				break;
+
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
 void 
 cDump(FILE *fh, char* name, ParamDef *def) {
-	
+
 	fputs(
 		"#include <errno.h>\n"
 		"#include <limits.h>\n"
@@ -1133,7 +1315,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs(
 		"\n"
-		"#define ARRAYALLOC(x,n,t,_chk_ro)  do {                             \\\n"
+		"#define ARRAYALLOC(x,n,t,_chk_ro, __flags)  do {                    \\\n"
 		"   int l = 0, ar;                                                   \\\n"
 		"   __typeof__(x) y = (x), t;                                        \\\n"
 		"   if ( (n) <= 0 ) return CNF_WRONGINDEX; /* wrong index */         \\\n"
@@ -1155,6 +1337,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"          *y = malloc( sizeof( __typeof__(**(x))) );                \\\n"
 		"          if (*y == NULL)  return CNF_NOMEMORY;                     \\\n"
 		"          if ( (ar = acceptDefault##t(*y)) != 0 ) return ar;        \\\n"
+		"          (*y)->__confetti_flags |= __flags;		             \\\n"
 		"          y++;                                                      \\\n"
 		"      }                                                             \\\n"
 		"   }                                                                \\\n"
@@ -1177,6 +1360,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"}\n\n",
 		fh
 	);
+
+	fprintf(fh,
+		"static void cleanFlags(%s* c, OptDef* opt);\n\n"
+		, name);
 
 	fputs(
 		"#define PRINTBUFLEN	8192\n"
@@ -1201,7 +1388,8 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh,
 		"static void\n"
 		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
-		"\tConfettyError	r;\n\n"
+		"\tConfettyError	r;\n"
+		"\tOptDef		*orig_opt = opt;\n\n"
 		"\tif (n_accepted) *n_accepted=0;\n"
 		"\tif (n_skipped) *n_skipped=0;\n"
 		"\n"
@@ -1250,6 +1438,8 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\t\t}\n\n"
 		"\t\topt = opt->next;\n"
 		"\t}\n"
+		"\n"
+		"\tcleanFlags(c, orig_opt);\n"
 		"}\n\n"
 		, name, '%', '%', '%', '%', '%', '%', '%', '%', '%'
 	); 
@@ -1329,6 +1519,18 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs("\treturn res;\n}\n\n",  fh);
 
+	fprintf(fh,
+		"static void\n"
+		"cleanFlags(%s* c, OptDef* opt) {\n"
+		, name);
+	fprintf(fh,
+		"\t%s_iterator_t iterator, *i = &iterator;\n\n", name);
+	makeCleanFlags(fh, def, 0);
+	fputs(
+		"}\n\n",
+		fh
+	);
+
 	fputs("/************** Duplicate config  **************/\n\n", fh);
 	fprintf(fh,
 		"int\n"
@@ -1348,5 +1550,30 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh,
 		"\t%s_iterator_t iterator, *i = &iterator;\n\n", name);
 	makeDestroy(fh, def, 0);
+	fputs("}\n\n", fh);
+
+	fputs("/************** Compare config  **************/\n\n", fh);
+	fprintf(fh,
+		"int\n"
+		"confetti_strcmp(char *s1, char *s2) {\n"
+			"\tif (s1 == NULL || s2 == NULL) {\n"
+				"\t\tif (s1 != s2)\n"
+					"\t\t\treturn s1 == NULL ? -1 : 1;\n"
+				"\t\telse\n"
+					"\t\t\treturn 0;\n"
+			"\t}\n\n"
+			"\treturn strcmp(s1, s2);\n"
+		"}\n\n");
+
+	fprintf(fh,
+		"char *\n"
+		"cmp_%s(%s* c1, %s* c2, int only_check_rdonly) {\n"
+		, name, name, name);
+	fprintf(fh,
+		"\t%s_iterator_t iterator1, iterator2, *i1 = &iterator1, *i2 = &iterator2;\n"
+		"\tstatic char diff[PRINTBUFLEN];\n\n",
+		name);
+	makeCmp(fh, def, 0);
+	fputs("\n\treturn 0;\n", fh);
 	fputs("}\n\n", fh);
 }

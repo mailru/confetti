@@ -27,4 +27,7 @@ asdf.array[0].substruct.sss => 'asdf.array.substruct.sss'
 asdf.array[0].subarray[0].subkey => '12'
 asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
+==========Compare=========
+total: equal
+only_rdonly: equal
 ==========Destroy=========

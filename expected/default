@@ -12,4 +12,7 @@ foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'
 asdf.k2 => (null)
+==========Compare=========
+total: equal
+only_rdonly: equal
 ==========Destroy=========
