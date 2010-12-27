@@ -183,7 +183,7 @@ DIGIT			[0-9]
 
 static int
 scan_yyerror(char *msg, int lineno) {
-    out_warning(CNF_SYNTAXERROR, "scan_yyerror: %s at line %d\n", msg, lineno);
+    out_warning(CNF_SYNTAXERROR, "scan_yyerror: %s at line %d", msg, lineno);
 	return 0;
 }
 
