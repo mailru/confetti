@@ -1337,7 +1337,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"          *y = malloc( sizeof( __typeof__(**(x))) );                \\\n"
 		"          if (*y == NULL)  return CNF_NOMEMORY;                     \\\n"
 		"          if ( (ar = acceptDefault##t(*y)) != 0 ) return ar;        \\\n"
-		"          (*y)->__confetti_flags |= __flags;		             \\\n"
+		"          (*y)->__confetti_flags = __flags;                         \\\n"
 		"          y++;                                                      \\\n"
 		"      }                                                             \\\n"
 		"   }                                                                \\\n"
