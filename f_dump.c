@@ -13,6 +13,20 @@ printPrefix(FILE *fh, int level) {
 }
 
 static void
+dumpComment(FILE *fh, int level, ParamDef *def) {
+	if (def->comment) {
+		ParamDef	*i = def->comment;
+	
+		fputc('\n', fh);
+		while(i) {
+			printPrefix(fh, level);
+			fprintf(fh, "# %s\n", i->paramValue.commentval);
+			i = i->next;
+		}
+	}
+}
+
+static void
 dumpParamDef(FILE *fh, int level, ParamDef *def) {
 	while(def) {
 		if (def->paramType == builtinType) {
@@ -20,17 +34,8 @@ dumpParamDef(FILE *fh, int level, ParamDef *def) {
 			continue;
 		}
 
-		if (def->comment) {
-			ParamDef	*i = def->comment;
-	
-			fputc('\n', fh);
-			while(i) {
-				printPrefix(fh, level);
-				fprintf(fh, "# %s\n", i->paramValue.commentval);
-				i = i->next;
-			}
-		}
-	
+		dumpComment(fh, level, def);
+
 		printPrefix(fh, level);
 		fprintf(fh, "%s = ", def->name);
 	
@@ -77,10 +82,11 @@ dumpParamDef(FILE *fh, int level, ParamDef *def) {
 				fputs("}", fh);
 				break;
 			case	arrayType:
-				fputs("[\n", fh);
+				fputs("[", fh);
+				dumpComment(fh, level+1, def->paramValue.arrayval);
 				printPrefix(fh, level+1);
 				fputs("{\n", fh);
-				dumpParamDef(fh, level+2, def->paramValue.arrayval);
+				dumpParamDef(fh, level+2, def->paramValue.arrayval->paramValue.structval);
 				printPrefix(fh, level+1);
 				fputs("}\n", fh);
 				printPrefix(fh, level);

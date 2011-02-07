@@ -32,7 +32,11 @@ asdf= {
 
 }
 
-root_array = [
+root_array = [ 
 	ra = -1.344e-08, required
 ], required
 
+test = [
+	#checl reqelem
+	{ e=1 }, required
+]

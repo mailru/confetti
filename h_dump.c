@@ -7,33 +7,45 @@
 
 void 
 dumpStructName(FILE *fh, ParamDef *def, char *delim) {
-	if (def && def->parent && def->parent->name) {
-		dumpStructName(fh, def->parent, delim);
-		fputs(delim, fh);
-		fputs(def->parent->name, fh);
+	if (def && def->parent) {
+		ParamDef	*p = def->parent;
+
+		if (p->name == NULL)
+			p = p->parent;
+
+		if (p != NULL) {
+			dumpStructName(fh, p, delim);
+			fputs(delim, fh);
+			fputs(p->name, fh);
+		}
+	}
+}
+
+static void
+dumpComment(FILE *fh, ParamDef *def, int istab) {
+	if (def->comment) {
+		ParamDef	*i = def->comment;
+
+		if (i->next) {
+			/* multiline comment */
+			fprintf(fh, "\n%s/*\n", istab ? "\t" : "");
+			while(i) {
+				fprintf(fh, "%s * %s\n", istab ? "\t" : "", i->paramValue.commentval);
+				i = i->next;
+			}
+			fprintf(fh, "%s */\n", istab ? "\t" : "");
+		} else {
+			/* single line comment */
+			fprintf(fh, "\n%s/* %s */\n", istab ? "\t" : "", i->paramValue.commentval);
+		}
 	}
 }
 
 static void
 dumpParamDef(FILE *fh, char* name, ParamDef *def) {
 	
-	if (def->comment) {
-		ParamDef	*i = def->comment;
-
-		if (i->next) {
-			/* multiline comment */
-			fprintf(fh, "\n\t/*\n");
-			while(i) {
-				fprintf(fh, "\t * %s\n", i->paramValue.commentval);
-				i = i->next;
-			}
-			fprintf(fh, "\t */\n");
-		} else {
-			/* single line comment */
-			fprintf(fh, "\n\t/* %s */\n", i->paramValue.commentval);
-		}
-	}
-
+	dumpComment(fh, def, 1);
+	
 	switch(def->paramType) {
 		case	int32Type:
 			fprintf(fh, "\tint32_t\t%s;\n", def->name);
@@ -63,7 +75,7 @@ dumpParamDef(FILE *fh, char* name, ParamDef *def) {
 			break;
 		case	arrayType:
 			fprintf(fh, "\t%s", name);
-			dumpStructName(fh, def->paramValue.arrayval, "_");
+			dumpStructName(fh, def->paramValue.arrayval->paramValue.structval, "_");
 			fprintf(fh, "**\t%s;\n", def->name);
 			break;
 		case 	builtinType:
@@ -91,7 +103,7 @@ dumpStruct(FILE *fh, char* name, ParamDef *def) {
 			list = def->paramValue.structval;
 			break;
 		case arrayType:
-			list = def->paramValue.arrayval;
+			list = def->paramValue.arrayval->paramValue.structval;
 			break;
 		default:
 			fprintf(stderr,"Non-struct paramType (%d)\n", def->paramType);
@@ -119,7 +131,8 @@ dumpRecursive(FILE *fh, char* name, ParamDef *def) {
 				dumpStruct(fh, name, def);
 				break;
 			case arrayType:
-				dumpRecursive(fh, name, def->paramValue.arrayval);
+				dumpComment(fh, def->paramValue.arrayval, 0);
+				dumpRecursive(fh, name, def->paramValue.arrayval->paramValue.structval);
 				dumpStruct(fh, name, def);
 				break;
 			default:
@@ -161,7 +174,7 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh, "int check_cfg_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "int dup_%s(%s *dst, %s *src);\n\n", name, name, name);
 	fprintf(fh, "void destroy_%s(%s *c);\n\n", name, name);
-	fprintf(fh, "char *cmp_%s(%s* c1, %s* c2, int only_check_rdonly)\n\n;", name, name, name);
+	fprintf(fh, "char *cmp_%s(%s* c1, %s* c2, int only_check_rdonly);\n\n", name, name, name);
 	fprintf(fh, "typedef struct %s_iterator_t %s_iterator_t;\n", name, name);
 	fprintf(fh, "%s_iterator_t* %s_iterator_init();\n", name, name);
 	fprintf(fh, "char* %s_iterator_next(%s_iterator_t* i, %s *c, char **v);\n\n", name, name, name);

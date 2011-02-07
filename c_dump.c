@@ -15,8 +15,13 @@ dumpParamDefCName(FILE *fh, ParamDef *def) {
 
 static int
 dumpParamDefNameList(FILE *fh, ParamDef *def, ParamDef *odef, int level) {
-    if (def && def->name) {
-			int maxlevel = dumpParamDefNameList(fh, def->parent, odef, level + 1);
+    if (def) {
+			int maxlevel;
+
+			if (def->name == NULL) 
+				def = def->parent;
+
+			maxlevel = dumpParamDefNameList(fh, def->parent, odef, level + 1);
 
 			fprintf(fh,"\t{ \"%s\", -1, ", def->name);
 
@@ -66,7 +71,7 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 					fputs("};\n", fh);
 				}
 				
-				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval);
+				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval->paramValue.structval);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -168,29 +173,29 @@ dumpDefaultArray(FILE *fh, char *name, ParamDef *def) {
 			dumpParamDefCName(fh, def);
 			fputs("(", fh);
 			fputs(name, fh);
-			dumpStructName(fh, def->paramValue.arrayval, "_");
+			dumpStructName(fh, def->paramValue.arrayval->paramValue.structval, "_");
 			fputs(" *c) {\n",fh);
 
 			/* reset parent */
-			ptr = def->paramValue.arrayval;
+			ptr = def->paramValue.arrayval->paramValue.structval;
 			while(ptr) {
 				ptr->parent = NULL;
 				ptr = ptr->next;
 			}
 
-			dumpDefault(fh, def->paramValue.arrayval);
+			dumpDefault(fh, def->paramValue.arrayval->paramValue.structval);
 
 			/* restore parent */
-			ptr = def->paramValue.arrayval;
+			ptr = def->paramValue.arrayval->paramValue.structval;
 			while(ptr) {
-				ptr->parent = def;
+				ptr->parent = def->paramValue.arrayval;
 				ptr = ptr->next;
 			}
 
 			fputs("\treturn 0;\n", fh);
 			fputs("}\n\n", fh);
 
-			dumpDefaultArray(fh, name, def->paramValue.arrayval);
+			dumpDefaultArray(fh, name, def->paramValue.arrayval->paramValue.structval);
 		} else if (def->paramType == structType) {
 			dumpDefaultArray(fh, name, def->paramValue.structval);
 		}
@@ -211,7 +216,13 @@ dumpArrayIndex(FILE *fh, int n) {
 static int
 dumpStructFullPath(FILE *fh, char *name, char *itername, ParamDef *def, int innerCall, int isiterator, int show_index) {
 	if (def) {
-		int n = dumpStructFullPath(fh, name, itername, def->parent, 1, isiterator, show_index);
+		int n;
+	
+		if (def->name == NULL)
+			def = def->parent;
+
+		n = dumpStructFullPath(fh, name, itername, def->parent, 1, isiterator, show_index);
+
 		fputs("->", fh);
 		fputs(def->name, fh);
 		if (def->paramType == arrayType && innerCall) {
@@ -393,7 +404,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				i = makeAccept(fh, def->paramValue.structval, i);
 				break;
 			case	arrayType:
-				i = makeAccept(fh, def->paramValue.arrayval, i);
+				i = makeAccept(fh, def->paramValue.arrayval->paramValue.structval, i);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -436,7 +447,7 @@ makeIteratorStates(FILE *fh, ParamDef *def) {
 				fputs("\tS", fh);
 				dumpParamDefCName(fh, def);
 				fputs(",\n", fh);
-				makeIteratorStates(fh, def->paramValue.arrayval);
+				makeIteratorStates(fh, def->paramValue.arrayval->paramValue.structval);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -470,7 +481,7 @@ makeArrayIndexes(FILE *fh, ParamDef *def) {
 				fputs("\tint\tidx", fh);
 				dumpParamDefCName(fh, def);
 				fputs(";\n", fh);
-				makeArrayIndexes(fh, def->paramValue.arrayval);
+				makeArrayIndexes(fh, def->paramValue.arrayval->paramValue.structval);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -518,7 +529,7 @@ makeSwitchArrayList(FILE *fh, ParamDef *def, int level) {
 				fputt(fh, level+2); fputs( "case S", fh);
 				dumpParamDefCName(fh, def);
 				fputs(":\n", fh);
-				makeSwitchArrayList(fh, def->paramValue.arrayval, level);
+				makeSwitchArrayList(fh, def->paramValue.arrayval->paramValue.structval, level);
 				break;
 			default:
 				break;
@@ -617,7 +628,7 @@ resetSubArray(FILE *fh, ParamDef *def, int level) {
 				fputs("i->idx", fh);
 				dumpParamDefCName(fh, def);
 				fputs(" = 0;\n", fh);
-				resetSubArray(fh, def->paramValue.arrayval, level);
+				resetSubArray(fh, def->paramValue.arrayval->paramValue.structval, level);
 				break;
 			default:
 				break;
@@ -630,7 +641,12 @@ resetSubArray(FILE *fh, ParamDef *def, int level) {
 static int
 dumpStructNameFullPath(FILE *fh, ParamDef *def, int innerCall) {
 	if (def) {
-		int n = dumpStructNameFullPath(fh, def->parent, 1);
+		int n;
+
+		if (def->name == NULL)
+			def = def->parent;
+
+		n = dumpStructNameFullPath(fh, def->parent, 1);
 		if (n!=0)
 			fputs(".", fh);
 		fputs(def->name, fh);
@@ -646,7 +662,12 @@ dumpStructNameFullPath(FILE *fh, ParamDef *def, int innerCall) {
 static int
 dumpArrayIndexes(FILE *fh, ParamDef *def, int innerCall) {
 	if (def) {
-		int n = dumpArrayIndexes(fh, def->parent, 1);
+		int n;
+
+		if (def->name == NULL)
+			def = def->parent;
+
+		n = dumpArrayIndexes(fh, def->parent, 1);
 		if (def->paramType == arrayType && innerCall) {
 			fputs(", ", fh);
 			fputs("i->idx", fh);
@@ -699,7 +720,7 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 						fputs("i->idx", fh);
 						dumpParamDefCName(fh, parent);
 						fputs("++;\n", fh);	
-						resetSubArray(fh, parent->paramValue.arrayval, level);
+						resetSubArray(fh, parent->paramValue.arrayval->paramValue.structval, level);
 					} else {
 						fputt(fh, level + 3);
 						fputs("i->state = _S_Finished;\n", fh);
@@ -724,7 +745,7 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 				fputt(fh, level+3); fputs( "i->state = S", fh);
 				dumpParamDefCName(fh, def);
 				fputs(";\n", fh);
-				makeSwitchArrayList(fh, def->paramValue.arrayval, level);
+				makeSwitchArrayList(fh, def->paramValue.arrayval->paramValue.structval, level);
 				fputt(fh, level+3); fputs("if (", fh);
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 					fputs(" && ", fh);
@@ -736,7 +757,7 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 				fputt(fh, level+5); fputs( "case S", fh);
 				dumpParamDefCName(fh, def);
 				fputs(":\n", fh);
-				makeSwitch(fh, def->paramValue.arrayval, def, level+3, NULL);
+				makeSwitch(fh, def->paramValue.arrayval->paramValue.structval, def, level+3, NULL);
 				fputt(fh, level+5); fputs("default:\n", fh);
 				fputt(fh, level+6); fputs("break;\n", fh);
 				fputt(fh, level+4); fputs("}\n", fh);
@@ -750,7 +771,7 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 					fputs("i->idx", fh);
 					dumpParamDefCName(fh, parent);
 					fputs("++;\n", fh);	
-					resetSubArray(fh, parent->paramValue.arrayval, level+1);
+					resetSubArray(fh, parent->paramValue.arrayval->paramValue.structval, level+1);
 					fputt(fh, level+4); 
 					fputs("goto again;\n", fh);
 					fputt(fh, level+3); fputs("}\n", fh);
@@ -770,7 +791,8 @@ countParents(ParamDef *def) {
 	int n = 0;
 
 	while(def) {
-		n++;
+		if (def->name != NULL)
+			n++;
 		def = def->parent;
 	}
 
@@ -782,7 +804,11 @@ dumpCheckArrayIndexes(FILE *fh, ParamDef *def, int level) {
 	ParamDef	*parent = def->parent;
 	int			i, n;
 
+
 	while(parent) { 
+		if (parent->name == NULL)
+			parent = parent->parent;
+
 		if (parent->paramType == arrayType) {
 			fputt(fh, level+2);
 			dumpParamDefCName(fh, def);
@@ -918,7 +944,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				dumpParamDefCName(fh, def);
 				fputs("]) {\n", fh);
 
-				makeCheck(fh, def->paramValue.arrayval, level+1);
+				makeCheck(fh, def->paramValue.arrayval->paramValue.structval, level+1);
 
 				fputt(fh, level+2);
 				fputs("i->idx", fh);
@@ -970,7 +996,7 @@ makeCleanFlags(FILE *fh, ParamDef *def, int level) {
 						fputt(fh, level + 1);
 						dumpStructFullPath(fh, "\t\tc", "i", def, 1, 1, 1);
 						fputs("->__confetti_flags = 0;\n\n", fh);
-						makeCleanFlags(fh, def->paramValue.arrayval, level + 2);
+						makeCleanFlags(fh, def->paramValue.arrayval->paramValue.structval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
 						dumpParamDefCName(fh, def);
@@ -1054,7 +1080,7 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 						fputs(" + 1, ", fh);
 						dumpParamDefCName(fh, def);
 						fputs(", 0, 0);\n\n", fh);
-						makeDup(fh, def->paramValue.arrayval, level + 2);
+						makeDup(fh, def->paramValue.arrayval->paramValue.structval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
 						dumpParamDefCName(fh, def);
@@ -1112,7 +1138,7 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 					fputts(fh, level + 1, "\twhile (");
 					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
 					fputs(" != NULL) {\n", fh);
-						makeDestroy(fh, def->paramValue.arrayval, level + 2);
+						makeDestroy(fh, def->paramValue.arrayval->paramValue.structval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\tfree(");
 						dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
@@ -1210,7 +1236,7 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 				fputs(" != NULL && " , fh);
 				dumpStructFullPath(fh, "c2", "i2", def, 1, 1, 1);
 				fputs(" != NULL) {\n", fh);
-					makeCmp(fh, def->paramValue.arrayval, level + 1);
+					makeCmp(fh, def->paramValue.arrayval->paramValue.structval, level + 1);
 					fputs("\n", fh);
 					fputts(fh, level + 1, "\ti1->idx");
 					dumpParamDefCName(fh, def);

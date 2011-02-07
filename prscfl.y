@@ -62,7 +62,7 @@ static ParamDef	*output;
 %type	<str>		identifier
 %type	<node>		param param_list
 %type	<node>		commented_param
-%type	<node>		comment
+%type	<node>		comment comment_opt
 %type	<node>		cfg
 %type	<int32val>	flags_opt flag flag_list
 
@@ -109,6 +109,11 @@ comment:
 		}
 	;
 
+comment_opt:
+	comment					{ $$ = $1; }
+	| /* EMPTY */			{ $$ = NULL; }
+	;
+
 flag:
 	RDWR_P					{ $$ = 0; }
 	| RDONLY_P				{ $$ = PARAMDEF_RDONLY; }
@@ -126,8 +131,7 @@ flags_opt:
 	;
 
 commented_param:
-	param flags_opt				{ $$ = $1; $$->flags = $2; }
-	| comment param flags_opt 	{ $$ = $2; $$->comment = $1; $$->flags = $3; }
+	comment_opt param flags_opt 	{ $$ = $2; $$->comment = $1; $$->flags = $3; }
 	;
 
 param:
@@ -139,7 +143,20 @@ param:
 	| identifier '=' STRING_P			{ MakeScalarParam($$, string, $1, $3); }
 	| identifier '=' NULL_P				{ MakeScalarParam($$, string, $1, NULL); }
 	| identifier '=' '{' param_list '}' { MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
-	| identifier '=' '[' param_list ']' { MakeScalarParam($$, array, $1, $4); SetParent( $$, $4 ); }
+	| identifier '=' '[' param_list ']' {
+											ParamDef *s;
+
+											MakeScalarParam(s, struct, NULL, $4); SetParent( s, $4 );
+											MakeScalarParam($$, array, $1, s); SetParent( $$, s ); 
+										}
+	| identifier '=' '[' comment_opt '{' param_list '}' flags_opt ']' { 
+											ParamDef *s;
+
+											MakeScalarParam(s, struct, NULL, $6); SetParent( s, $6 );
+											s->comment = $4;
+											s->flags = $8;
+											MakeScalarParam($$, array, $1, s); SetParent( $$, s ); 
+										}
 	;
 
 %%
