@@ -52,6 +52,6 @@ clean:
 	rm -f $(NAME).cfg $(NAME)_cfg.c $(NAME)_cfg.h
 	rm -f prscfg.c prscfg.h
 	rm -f $(example_OBJS) $(example_buffer_OBJS)
-	rm -f example example_buffer
+	rm -f example example_buffer *core
 
 

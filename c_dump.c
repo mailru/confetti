@@ -63,13 +63,11 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 				dumpParamDefCNameRecursive(fh, def->paramValue.structval);
 				break;
 			case	arrayType:
-				if (def->flags & PARAMDEF_REQUIRED) {
-					fputs("static NameAtom ", fh);
-					dumpParamDefCName(fh, def);
-					fputs("[] = {\n", fh);
-					dumpParamDefNameList(fh, def, def, 0);
-					fputs("};\n", fh);
-				}
+				fputs("static NameAtom ", fh);
+				dumpParamDefCName(fh, def);
+				fputs("[] = {\n", fh);
+				dumpParamDefNameList(fh, def, def, 0);
+				fputs("};\n", fh);
 				
 				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval->paramValue.structval);
 				break;
@@ -263,7 +261,7 @@ arrangeArray(FILE *fh, ParamDef *def) {
 			fputs("\t\tif (", fh);
 			dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
-				fputs("\t\t\tcheck_rdonly = 0;\n", fh);
+			fputs("\t\t\tcheck_rdonly = 0;\n", fh);
 		}
 	}
 }
@@ -290,13 +288,31 @@ printIf(FILE *fh, ParamDef *def, int i) {
 		case	stringType:
 			fputs("stringType", fh);
 			break;
+		case	arrayType:
+			fputs("arrayType", fh);
+			break;
 		default:
 			fprintf(stderr,"Unexpected def type: %d", def->paramType);
 			break;
 	}
 
 	fputs(" )\n\t\t\treturn CNF_WRONGTYPE;\n", fh);
-	arrangeArray(fh, def);
+	if (def->paramType != arrayType) {
+		arrangeArray(fh, def);
+	} else {
+		int	n;
+
+		arrangeArray(fh, def->parent);
+
+		fputs("\t\tARRAYALLOC(", fh);
+		n = dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
+		fputs(", 0, ", fh);
+		dumpParamDefCName(fh, def);
+		if (def->flags & PARAMDEF_RDONLY)
+			fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW);\n", fh);
+		else
+			fputs(", 0, CNF_FLAG_STRUCT_NEW);\n", fh);
+	}
 }
 
 static int
@@ -404,6 +420,8 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				i = makeAccept(fh, def->paramValue.structval, i);
 				break;
 			case	arrayType:
+				printIf(fh, def, i);
+				fputs("\t}\n",fh);
 				i = makeAccept(fh, def->paramValue.arrayval->paramValue.structval, i);
 				break;
 			default:
@@ -1069,6 +1087,11 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 					fputts(fh, level + 1, "\ti->idx");
 					dumpParamDefCName(fh, def);
 					fputs(" = 0;\n", fh);
+					fputts(fh, level, "\t\tARRAYALLOC(");
+					dumpStructFullPath(fh, "dst", "i", def, 0, 1, 1);
+					fputs(", 0, ", fh);
+					dumpParamDefCName(fh, def);
+					fputs(", 0, 0);\n\n", fh);
 					fputts(fh, level + 1, "\twhile (");
 					dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
 					fputs(" != NULL) {\n", fh);
@@ -1344,11 +1367,11 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"#define ARRAYALLOC(x,n,t,_chk_ro, __flags)  do {                    \\\n"
 		"   int l = 0, ar;                                                   \\\n"
 		"   __typeof__(x) y = (x), t;                                        \\\n"
-		"   if ( (n) <= 0 ) return CNF_WRONGINDEX; /* wrong index */         \\\n"
+		"   if ( (n) < 0 ) return CNF_WRONGINDEX; /* wrong index */          \\\n"
 		"   while(y && *y) {                                                 \\\n"
 		"       l++; y++;                                                    \\\n"
 		"   }                                                                \\\n"
-		"   if ( (n) >= (l + 1) ) {                                          \\\n"
+		"   if ( (n) >= l ) {                                                \\\n"
 		"      if (_chk_ro)  return CNF_RDONLY;                              \\\n"
 		"      if ( (x) == NULL )                                            \\\n"
 		"          t = y = malloc( ((n)+1) * sizeof( __typeof__(*(x))) );    \\\n"

@@ -135,6 +135,7 @@ param:
 	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
 	| keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	| keyname '=' '[' struct_list comma_opt ']' 		{ $4->name = $1; $$ = $4; }
+	| keyname '=' '[' ']' 					{ MakeScalarParam($$, array, $1, NULL); }
 	| array_keyname '=' '{' param_list comma_opt '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
@@ -284,7 +285,28 @@ plainOptDef(OptDef *def, OptDef *list) {
 				list = plainOptDef(def->paramValue.structval, list);
 				break;
 			case arrayType:
-				list = plainOptDef(def->paramValue.arrayval, list);
+				if (def->paramValue.arrayval == NULL) {
+					ptr = malloc(sizeof(*ptr));
+					if (!ptr) {
+						out_warning(CNF_NOMEMORY, "No memory");
+						freeCfgDef(def);
+						freeCfgDef(list);
+						return NULL;
+					}
+					*ptr = *def;
+					if (compileName(ptr)) {
+						freeName(ptr->name);
+						free(ptr);
+						freeCfgDef(def);
+						freeCfgDef(list);
+						return NULL;
+					}
+					ptr->parent = NULL;
+					ptr->next = list;
+					list = ptr;
+				} else {
+					list = plainOptDef(def->paramValue.arrayval, list);
+				}
 				break;
 			default:
 				out_warning(CNF_INTERNALERROR, "Unkown paramType: %d", def->paramType);

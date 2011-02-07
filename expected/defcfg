@@ -1,4 +1,4 @@
-==========Accepted: 11; Skipped: 0===========
+==========Accepted: 12; Skipped: 0===========
 foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'
@@ -10,6 +10,7 @@ asdf.array[0].subarray[0].subkey => '12'
 asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
 test[0].e => '1'
+empty[0].wow => (null)
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.k2' is not set (or has a default value)
@@ -29,6 +30,7 @@ asdf.array[0].subarray[0].subkey => '12'
 asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
 test[0].e => '1'
+empty[0].wow => (null)
 ==========Compare=========
 total: equal
 only_rdonly: equal

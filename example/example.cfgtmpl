@@ -40,3 +40,7 @@ test = [
 	#checl reqelem
 	{ e=1 }, required
 ]
+
+empty = [
+	wow=NULL
+], required
