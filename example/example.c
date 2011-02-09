@@ -27,7 +27,7 @@ main(int argc, char* argv[]) {
 
 	if (argc > 1) {
 		cfg.array_of_ro_structs = malloc((1 + 1) * sizeof(cfg.array_of_ro_structs));
-		cfg.array_of_ro_structs[0] = malloc(sizeof(*cfg.array_of_ro_structs));
+		cfg.array_of_ro_structs[0] = malloc(sizeof(**cfg.array_of_ro_structs));
 		cfg.array_of_ro_structs[0]->f1 = 1;
 		cfg.array_of_ro_structs[0]->f2 = 2;
 		cfg.array_of_ro_structs[1] = NULL;
