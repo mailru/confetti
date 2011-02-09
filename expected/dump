@@ -1,0 +1,25 @@
+BUILTIN
+u_int32_t (RW, REQ)	foo
+int64_t (RW)	bar
+struct (RW)	asdf
+	char* (RW)	k1
+	char* (RW, REQ)	k2
+	array (RW)	array
+		struct (RW)	(null)
+			double (RO)	qwerty
+			int32_t (RW)	qwer1
+			struct (RW)	substruct
+				char* (RW, REQ)	sss
+			array (RO)	subarray
+				struct (RW)	(null)
+					int32_t (RW)	subkey
+					u_int64_t (RW, REQ)	subke12
+array (RW, REQ)	root_array
+	struct (RW)	(null)
+		double (RW, REQ)	ra
+array (RW)	test
+	struct (RW, REQ)	(null)
+		int32_t (RW)	e
+array (RW, REQ)	empty
+	struct (RW)	(null)
+		char* (RW)	wow

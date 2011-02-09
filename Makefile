@@ -66,8 +66,8 @@ prscfg_gram.c: prscfg.y
 test: example
 	@[ -d results ] || mkdir results
 	@[ -d diffs ] || mkdir diffs
-	@for FILE in default defcfg custom buffer ; do \
-		echo -n $$FILE	"    ........ " ; \
+	@for FILE in dump default defcfg custom buffer ; do \
+		echo -n $$FILE	"	........ " ; \
 		if sh tests/$$FILE > results/$$FILE 2>results/$$FILE.errout && diff -c expected/$$FILE results/$$FILE > diffs/$$FILE ; then \
 			echo ok ; \
 		else \
