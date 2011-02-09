@@ -8,9 +8,11 @@ static void
 dumpParamDefCName(FILE *fh, ParamDef *def) {
 	fputs("_name", fh);
 	dumpStructName(fh, def, "__");
-	fputc('_', fh);
-	fputc('_', fh);
-	fputs(def->name, fh);
+	if (def->name) {
+		fputc('_', fh);
+		fputc('_', fh);
+		fputs(def->name, fh);
+	}
 }
 
 static int
@@ -68,8 +70,8 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 				fputs("[] = {\n", fh);
 				dumpParamDefNameList(fh, def, def, 0);
 				fputs("};\n", fh);
-				
-				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval->paramValue.structval);
+
+				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -146,6 +148,9 @@ dumpDefault(FILE *fh, ParamDef *def) {
 				fputs("\tif (", fh);
 				dumpStructPath(fh, def, "c");
 				fputs(" == NULL) return CNF_NOMEMORY;\n", fh);
+				fputs("\t", fh);
+				dumpStructPath(fh, def, "c");
+				fputs("->__confetti_flags = CNF_FLAG_STRUCT_NOTSET;\n", fh);
 				dumpDefault(fh, def->paramValue.structval);
 				break;
 			case	arrayType:
@@ -166,7 +171,7 @@ dumpDefaultArray(FILE *fh, char *name, ParamDef *def) {
 	while(def) {
 		if (def->paramType == arrayType) {
 			ParamDef *ptr;
-			
+
 			fputs("static int\nacceptDefault", fh);
 			dumpParamDefCName(fh, def);
 			fputs("(", fh);
@@ -255,9 +260,9 @@ arrangeArray(FILE *fh, ParamDef *def) {
 			fputs(" + 1, ", fh);
 			dumpParamDefCName(fh, def);
 			if (def->flags & PARAMDEF_RDONLY)
-				fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW);\n", fh);
+				fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW | CNF_FLAG_STRUCT_NOTSET);\n", fh);
 			else
-				fputs(", 0, CNF_FLAG_STRUCT_NEW);\n", fh);
+				fputs(", 0, CNF_FLAG_STRUCT_NEW | CNF_FLAG_STRUCT_NOTSET);\n", fh);
 			fputs("\t\tif (", fh);
 			dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
@@ -309,9 +314,9 @@ printIf(FILE *fh, ParamDef *def, int i) {
 		fputs(", 0, ", fh);
 		dumpParamDefCName(fh, def);
 		if (def->flags & PARAMDEF_RDONLY)
-			fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW);\n", fh);
+			fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW | CNF_FLAG_STRUCT_NOTSET);\n", fh);
 		else
-			fputs(", 0, CNF_FLAG_STRUCT_NEW);\n", fh);
+			fputs(", 0, CNF_FLAG_STRUCT_NEW | CNF_FLAG_STRUCT_NOTSET);\n", fh);
 	}
 }
 
@@ -328,6 +333,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	doubleType:
 			case	stringType:
 				printIf(fh, def, i);
+				if (def->parent && def->parent->paramType == structType) {
+					fputs("\t\t", fh);
+					dumpStructFullPath(fh, "c", "i", def->parent, 1, 0, 1);
+					fputs("->__confetti_flags &= ~CNF_FLAG_STRUCT_NOTSET;\n", fh);
+				}
 				fputs("\t\terrno = 0;\n", fh);
 				switch(def->paramType) {
 					case	int32Type:
@@ -414,7 +424,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				fputs("\t}\n",fh);
 				break;
 			case	commentType:
-				fprintf(stderr, "Unexpected comment"); 
+				fprintf(stderr, "Unexpected comment");
 				break;
 			case	structType:
 				i = makeAccept(fh, def->paramValue.structval, i);
@@ -422,7 +432,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	arrayType:
 				printIf(fh, def, i);
 				fputs("\t}\n",fh);
-				i = makeAccept(fh, def->paramValue.arrayval->paramValue.structval, i);
+				i = makeAccept(fh, def->paramValue.arrayval, i);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -854,7 +864,7 @@ makeOutCheck(FILE *fh, ParamDef *def, int level) {
 	dumpParamDefCName(fh, def);
 	fputs("));\n", fh);
 	fputt(fh, level+1);
-	fputs("}\n\n", fh);
+	fputs("}\n", fh);
 }
 
 static void
@@ -938,7 +948,20 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				fprintf(stderr, "Unexpected comment"); 
 				break;
 			case	structType:
-				makeCheck(fh, def->paramValue.structval, level);
+				if (def->flags & PARAMDEF_REQUIRED) {
+					fputts(fh, level + 1, "if (");
+					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
+					fputs("->__confetti_flags & CNF_FLAG_STRUCT_NOTSET) {\n", fh);
+						fputts(fh, level + 2, "res++;\n");
+						dumpCheckArrayIndexes(fh, def, level);
+						fputts(fh, level + 2, "out_warning(CNF_NOTSET, \"Option '%s' is not set\", dumpOptDef(");
+						dumpParamDefCName(fh, def);
+						fputs("));\n", fh);
+					fputts(fh, level + 1, "} else {\n");
+					makeCheck(fh, def->paramValue.structval, level + 1);
+					fputts(fh, level + 1, "}\n\n");
+				} else
+					makeCheck(fh, def->paramValue.structval, level);
 				break;
 			case	arrayType:
 				if (def->flags & PARAMDEF_REQUIRED) {
@@ -962,7 +985,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				dumpParamDefCName(fh, def);
 				fputs("]) {\n", fh);
 
-				makeCheck(fh, def->paramValue.arrayval->paramValue.structval, level+1);
+				makeCheck(fh, def->paramValue.arrayval, level+1);
 
 				fputt(fh, level+2);
 				fputs("i->idx", fh);
@@ -996,7 +1019,7 @@ makeCleanFlags(FILE *fh, ParamDef *def, int level) {
 			case	structType:
 				fputt(fh, level + 1);
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
-				fputs("->__confetti_flags = 0;\n", fh);
+				fputs("->__confetti_flags &= ~CNF_FLAG_STRUCT_NEW;\n", fh);
 
 				makeCleanFlags(fh, def->paramValue.structval, level);
 				break;
@@ -1013,7 +1036,7 @@ makeCleanFlags(FILE *fh, ParamDef *def, int level) {
 					fputs(" != NULL) {\n", fh);
 						fputt(fh, level + 1);
 						dumpStructFullPath(fh, "\t\tc", "i", def, 1, 1, 1);
-						fputs("->__confetti_flags = 0;\n\n", fh);
+						fputs("->__confetti_flags &= ~CNF_FLAG_STRUCT_NEW;\n\n", fh);
 						makeCleanFlags(fh, def->paramValue.arrayval->paramValue.structval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");

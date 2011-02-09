@@ -1,4 +1,4 @@
-==========Accepted: 26; Skipped: 0===========
+==========Accepted: 28; Skipped: 0===========
 foo => '1234'
 bar => '-987654'
 asdf.k1 => 'as"d'
@@ -30,6 +30,9 @@ root_array[0].ra => '-1e-09'
 root_array[1].ra => '-1.344e-08'
 root_array[2].ra => '-1.344e-08'
 root_array[3].ra => '12'
+test[0].e => '0'
+test[1].e => '1'
+test[2].e => '2'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.array[0].subarray[0].subke12' is not set (or has a default value)
@@ -39,7 +42,10 @@ Option 'asdf.array[2].subarray[2].subke12' is not set (or has a default value)
 Option 'asdf.array[2].subarray[3].subke12' is not set (or has a default value)
 Option 'root_array[1].ra' is not set (or has a default value)
 Option 'root_array[2].ra' is not set (or has a default value)
-Missed required: 8
+Option 'test[1]' is not set
+Missed required: 9
+root_array[1] is not defined
+root_array[2] is not defined
 ==========Dup=============
 foo => '1234'
 bar => '-987654'
@@ -72,6 +78,9 @@ root_array[0].ra => '-1e-09'
 root_array[1].ra => '-1.344e-08'
 root_array[2].ra => '-1.344e-08'
 root_array[3].ra => '12'
+test[0].e => '0'
+test[1].e => '1'
+test[2].e => '2'
 ==========Compare=========
 total: equal
 only_rdonly: equal

@@ -55,6 +55,16 @@ main(int argc, char* argv[]) {
 	useStdout = 1;
 	printf("Missed required: %d\n", check_cfg_my_product(&cfg));
 
+	typeof(cfg.root_array) root_array = cfg.root_array;
+	unsigned k = 0;
+	while (root_array && *root_array) {
+		if (!STRUCT_DEFINED(*root_array))
+			printf("root_array[%u] is not defined\n", k);
+
+		++k;
+		++root_array;
+	}
+
 	printf("==========Dup=============\n");
 	dup_my_product(&dup_cfg, &cfg);
 	i = my_product_iterator_init();
