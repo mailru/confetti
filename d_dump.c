@@ -10,6 +10,15 @@ putt(int level) {
 		putchar('\t');
 }
 
+static void 
+printDef(char *type, ParamDef *def) {
+	printf("%s (%s%s)\t%s\n", 
+				type,
+				(def->flags & PARAMDEF_RDONLY) ? "RO" : "RW",
+				(def->flags & PARAMDEF_REQUIRED) ? ", REQ" : "",
+				def->name);
+}
+
 static void
 debugParamDef(ParamDef *def, int level) {
 
@@ -17,32 +26,32 @@ debugParamDef(ParamDef *def, int level) {
 		putt(level);
 		switch(def->paramType) {
 			case	int32Type:
-				printf("int32_t\t%s\n", def->name);
+				printDef("int32_t", def);
 				break;
 			case	uint32Type:
-				printf("u_int32_t\t%s\n", def->name);
+				printDef("u_int32_t", def);
 				break;
 			case	int64Type:
-				printf("int64_t\t%s\n", def->name);
+				printDef("int64_t", def);
 				break;
 			case	uint64Type:
-				printf("u_int64_t\t%s\n", def->name);
+				printDef("u_int64_t", def);
 				break;
 			case	doubleType:
-				printf("double\t%s\n", def->name);
+				printDef("double", def);
 				break;
 			case	stringType:
-				printf("char*\t%s\n", def->name);
+				printDef("char*", def);
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
 				break;
 			case	structType:
-				printf("struct\t%s\n", def->name);
+				printDef("struct", def);
 				debugParamDef(def->paramValue.structval, level+1);
 				break;
 			case	arrayType:
-				printf("array\t%s\n", def->name);
+				printDef("array", def);
 				debugParamDef(def->paramValue.arrayval, level+1);
 				break;
 			case 	builtinType:
