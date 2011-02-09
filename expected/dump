@@ -23,3 +23,10 @@ array (RW)	test
 array (RW, REQ)	empty
 	struct (RW)	(null)
 		char* (RW)	wow
+struct (RO)	ro_struct
+	int32_t (RO)	f1
+	int32_t (RO)	f2
+array (RW)	array_of_ro_structs
+	struct (RO)	(null)
+		int32_t (RO)	f1
+		int32_t (RO)	f2

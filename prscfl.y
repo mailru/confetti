@@ -38,6 +38,18 @@ static ParamDef	*output;
 	}										\
 } while(0)
 
+#define PropagateStructFlags(s, f) do {					\
+	if ((s)->paramType == structType && ((f) & PARAMDEF_RDONLY)) {	\
+		ParamDef *child_def = (s)->paramValue.structval;	\
+									\
+		while(child_def) {					\
+			child_def->flags |= PARAMDEF_RDONLY;		\
+									\
+			child_def = child_def->next;			\
+		}							\
+	}								\
+} while(0)
+
 %}
 
 %pure-parser
@@ -131,7 +143,10 @@ flags_opt:
 	;
 
 commented_param:
-	comment_opt param flags_opt 	{ $$ = $2; $$->comment = $1; $$->flags = $3; }
+	comment_opt param flags_opt 	{
+			$$ = $2; $$->comment = $1; $$->flags = $3;
+			PropagateStructFlags($2, $3);
+		}
 	;
 
 param:
@@ -156,6 +171,8 @@ param:
 											s->comment = $4;
 											s->flags = $8;
 											MakeScalarParam($$, array, $1, s); SetParent( $$, s ); 
+
+											PropagateStructFlags(s, $8);
 										}
 	;
 

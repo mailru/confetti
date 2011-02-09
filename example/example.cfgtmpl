@@ -44,3 +44,13 @@ test = [
 empty = [
 	wow=NULL
 ], required
+
+ro_struct = {
+	f1 = 1
+	f2 = 2
+}, ro
+
+array_of_ro_structs = [ {
+	f1 = 1
+	f2 = 2
+}, ro ]

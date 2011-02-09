@@ -1,4 +1,4 @@
-==========Accepted: 12; Skipped: 0===========
+==========Accepted: 16; Skipped: 0===========
 foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'
@@ -11,6 +11,10 @@ asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
 test[0].e => '1'
 empty[0].wow => (null)
+ro_struct.f1 => '1'
+ro_struct.f2 => '2'
+array_of_ro_structs[0].f1 => '1'
+array_of_ro_structs[0].f2 => '2'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.k2' is not set (or has a default value)
@@ -31,6 +35,10 @@ asdf.array[0].subarray[0].subke12 => '7654'
 root_array[0].ra => '-1.344e-08'
 test[0].e => '1'
 empty[0].wow => (null)
+ro_struct.f1 => '1'
+ro_struct.f2 => '2'
+array_of_ro_structs[0].f1 => '1'
+array_of_ro_structs[0].f2 => '2'
 ==========Compare=========
 total: equal
 only_rdonly: equal

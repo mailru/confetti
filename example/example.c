@@ -26,6 +26,14 @@ main(int argc, char* argv[]) {
 	fill_default_my_product(&cfg);
 
 	if (argc > 1) {
+		cfg.array_of_ro_structs = malloc((1 + 1) * sizeof(cfg.array_of_ro_structs));
+		cfg.array_of_ro_structs[0] = malloc(sizeof(*cfg.array_of_ro_structs));
+		cfg.array_of_ro_structs[0]->f1 = 1;
+		cfg.array_of_ro_structs[0]->f2 = 2;
+		cfg.array_of_ro_structs[1] = NULL;
+	}
+
+	if (argc > 1) {
 		int			nAccepted, nSkipped;
 		FILE *fh = fopen(argv[1], "r");
 
@@ -34,7 +42,8 @@ main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		parse_cfg_file_my_product(&cfg, fh, 0, &nAccepted, &nSkipped);
+		useStdout = 1;
+		parse_cfg_file_my_product(&cfg, fh, 1, &nAccepted, &nSkipped);
 
 		printf("==========Accepted: %d; Skipped: %d===========\n", nAccepted, nSkipped);
 
