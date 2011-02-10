@@ -948,20 +948,21 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				fprintf(stderr, "Unexpected comment"); 
 				break;
 			case	structType:
+				fputts(fh, level + 1, "if (");
+				dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
+				fputs("->__confetti_flags & CNF_FLAG_STRUCT_NOTSET) {\n", fh);
 				if (def->flags & PARAMDEF_REQUIRED) {
-					fputts(fh, level + 1, "if (");
-					dumpStructFullPath(fh, "c", "i", def, 1, 1, 1);
-					fputs("->__confetti_flags & CNF_FLAG_STRUCT_NOTSET) {\n", fh);
-						fputts(fh, level + 2, "res++;\n");
-						dumpCheckArrayIndexes(fh, def, level);
-						fputts(fh, level + 2, "out_warning(CNF_NOTSET, \"Option '%s' is not set\", dumpOptDef(");
-						dumpParamDefCName(fh, def);
-						fputs("));\n", fh);
-					fputts(fh, level + 1, "} else {\n");
+					fputts(fh, level + 2, "res++;\n");
+					dumpCheckArrayIndexes(fh, def, level);
+					fputts(fh, level + 2, "out_warning(CNF_NOTSET, \"Option '%s' is not set\", dumpOptDef(");
+					dumpParamDefCName(fh, def);
+					fputs("));\n", fh);
+				} else {
+					fputts(fh, level + 2, "(void)0;\n");
+				}
+				fputts(fh, level + 1, "} else {\n");
 					makeCheck(fh, def->paramValue.structval, level + 1);
 					fputts(fh, level + 1, "}\n\n");
-				} else
-					makeCheck(fh, def->paramValue.structval, level);
 				break;
 			case	arrayType:
 				if (def->flags & PARAMDEF_REQUIRED) {

@@ -6,10 +6,9 @@ ro_struct.f1 => '1'
 ro_struct.f2 => '2'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
-Option 'asdf.k2' is not set (or has a default value)
 Option 'root_array' is not set (or has a default value)
 Option 'empty' is not set (or has a default value)
-Missed required: 4
+Missed required: 3
 ==========Dup=============
 foo => '1234'
 bar => '-54321'
