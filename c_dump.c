@@ -311,7 +311,7 @@ printIf(FILE *fh, ParamDef *def, int i) {
 
 		fputs("\t\tARRAYALLOC(", fh);
 		n = dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
-		fputs(", 0, ", fh);
+		fputs(", 1, ", fh);
 		dumpParamDefCName(fh, def);
 		if (def->flags & PARAMDEF_RDONLY)
 			fputs(", check_rdonly, CNF_FLAG_STRUCT_NEW | CNF_FLAG_STRUCT_NOTSET);\n", fh);
@@ -1113,7 +1113,7 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 					fputs(" = 0;\n", fh);
 					fputts(fh, level, "\t\tARRAYALLOC(");
 					dumpStructFullPath(fh, "dst", "i", def, 0, 1, 1);
-					fputs(", 0, ", fh);
+					fputs(", 1, ", fh);
 					dumpParamDefCName(fh, def);
 					fputs(", 0, 0);\n\n", fh);
 					fputts(fh, level + 1, "\twhile (");
@@ -1391,11 +1391,11 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"#define ARRAYALLOC(x,n,t,_chk_ro, __flags)  do {                    \\\n"
 		"   int l = 0, ar;                                                   \\\n"
 		"   __typeof__(x) y = (x), t;                                        \\\n"
-		"   if ( (n) < 0 ) return CNF_WRONGINDEX; /* wrong index */          \\\n"
+		"   if ( (n) <= 0 ) return CNF_WRONGINDEX; /* wrong index */         \\\n"
 		"   while(y && *y) {                                                 \\\n"
 		"       l++; y++;                                                    \\\n"
 		"   }                                                                \\\n"
-		"   if ( (n) >= l ) {                                                \\\n"
+		"   if ( (n) >= (l + 1) ) {                                          \\\n"
 		"      if (_chk_ro)  return CNF_RDONLY;                              \\\n"
 		"      if ( (x) == NULL )                                            \\\n"
 		"          t = y = malloc( ((n)+1) * sizeof( __typeof__(*(x))) );    \\\n"
