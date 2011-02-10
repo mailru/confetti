@@ -68,7 +68,7 @@ main(int argc, char* argv[]) {
 	typeof(cfg.root_array) root_array = cfg.root_array;
 	unsigned k = 0;
 	while (root_array && *root_array) {
-		if (!STRUCT_DEFINED(*root_array))
+		if (!CNF_STRUCT_DEFINED(*root_array))
 			printf("root_array[%u] is not defined\n", k);
 
 		++k;
