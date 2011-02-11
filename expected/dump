@@ -30,3 +30,19 @@ array (RW)	array_of_ro_structs
 	struct (RO)	(null)
 		int32_t (RO)	f1
 		int32_t (RO)	f2
+struct (RW, REQ)	required_struct_with_structs
+	int32_t (RW)	f1
+	int32_t (RW)	f2
+	struct (RW)	s1
+		int32_t (RW)	f1
+		int32_t (RW)	f2
+		struct (RW)	ss1
+			int32_t (RW)	f1
+			int32_t (RW)	f2
+array (RW)	array_with_required_structs_with_structs
+	struct (RW, REQ)	(null)
+		int32_t (RW)	f1
+		int32_t (RW)	f2
+		struct (RW)	s
+			int32_t (RW)	f1
+			int32_t (RW)	f2

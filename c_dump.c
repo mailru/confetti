@@ -59,9 +59,16 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 				fputs("};\n", fh);
 				break;
 			case	commentType:
-				fprintf(stderr, "Unexpected comment"); 
+				fprintf(stderr, "Unexpected comment");
 				break;
 			case	structType:
+				if (def->flags & PARAMDEF_REQUIRED) {
+					fputs("static NameAtom ", fh);
+					dumpParamDefCName(fh, def);
+					fputs("[] = {\n", fh);
+					dumpParamDefNameList(fh, def, def, 0);
+					fputs("};\n", fh);
+				}
 				dumpParamDefCNameRecursive(fh, def->paramValue.structval);
 				break;
 			case	arrayType:
@@ -71,7 +78,7 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 				dumpParamDefNameList(fh, def, def, 0);
 				fputs("};\n", fh);
 
-				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval);
+				dumpParamDefCNameRecursive(fh, def->paramValue.arrayval->paramValue.structval);
 				break;
 			default:
 				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
@@ -267,6 +274,10 @@ arrangeArray(FILE *fh, ParamDef *def) {
 			dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 			fputs("->__confetti_flags & CNF_FLAG_STRUCT_NEW)\n", fh);
 			fputs("\t\t\tcheck_rdonly = 0;\n", fh);
+		} else {
+			fputs("\t\t", fh);
+			dumpStructFullPath(fh, "c", "i", def->parent, 1, 0, 1);
+			fputs("->__confetti_flags &= ~CNF_FLAG_STRUCT_NOTSET;\n", fh);
 		}
 	}
 }
@@ -333,11 +344,6 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	doubleType:
 			case	stringType:
 				printIf(fh, def, i);
-				if (def->parent && def->parent->paramType == structType) {
-					fputs("\t\t", fh);
-					dumpStructFullPath(fh, "c", "i", def->parent, 1, 0, 1);
-					fputs("->__confetti_flags &= ~CNF_FLAG_STRUCT_NOTSET;\n", fh);
-				}
 				fputs("\t\terrno = 0;\n", fh);
 				switch(def->paramType) {
 					case	int32Type:

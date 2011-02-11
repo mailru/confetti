@@ -1,4 +1,4 @@
-==========Accepted: 16; Skipped: 0===========
+==========Accepted: 26; Skipped: 0===========
 foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'
@@ -15,6 +15,16 @@ ro_struct.f1 => '1'
 ro_struct.f2 => '2'
 array_of_ro_structs[0].f1 => '1'
 array_of_ro_structs[0].f2 => '2'
+required_struct_with_structs.f1 => '1'
+required_struct_with_structs.f2 => '2'
+required_struct_with_structs.s1.f1 => '1'
+required_struct_with_structs.s1.f2 => '2'
+required_struct_with_structs.s1.ss1.f1 => '1'
+required_struct_with_structs.s1.ss1.f2 => '2'
+array_with_required_structs_with_structs[0].f1 => '1'
+array_with_required_structs_with_structs[0].f2 => '2'
+array_with_required_structs_with_structs[0].s.f1 => '1'
+array_with_required_structs_with_structs[0].s.f2 => '2'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.k2' is not set (or has a default value)
@@ -39,6 +49,16 @@ ro_struct.f1 => '1'
 ro_struct.f2 => '2'
 array_of_ro_structs[0].f1 => '1'
 array_of_ro_structs[0].f2 => '2'
+required_struct_with_structs.f1 => '1'
+required_struct_with_structs.f2 => '2'
+required_struct_with_structs.s1.f1 => '1'
+required_struct_with_structs.s1.f2 => '2'
+required_struct_with_structs.s1.ss1.f1 => '1'
+required_struct_with_structs.s1.ss1.f2 => '2'
+array_with_required_structs_with_structs[0].f1 => '1'
+array_with_required_structs_with_structs[0].f2 => '2'
+array_with_required_structs_with_structs[0].s.f1 => '1'
+array_with_required_structs_with_structs[0].s.f2 => '2'
 ==========Compare=========
 total: equal
 only_rdonly: equal

@@ -54,3 +54,27 @@ array_of_ro_structs = [ {
 	f1 = 1
 	f2 = 2
 }, ro ]
+
+required_struct_with_structs = {
+	f1 = 1
+	f2 = 2
+	s1 = {
+		f1 = 1
+		f2 = 2
+		ss1 = {
+			f1 = 1
+			f2 = 2
+		}
+	}
+}, required
+
+array_with_required_structs_with_structs = [
+	{
+		f1 = 1
+		f2 = 2
+		s = {
+			f1 = 1
+			f2 = 2
+		}
+	}, required
+]

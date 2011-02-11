@@ -1,6 +1,6 @@
 Could not accept read only 'ro_struct.f1' option
 Could not accept read only 'array_of_ro_structs[0].f1' option
-==========Accepted: 28; Skipped: 2===========
+==========Accepted: 31; Skipped: 2===========
 foo => '1234'
 bar => '-987654'
 asdf.k1 => 'as"d'
@@ -40,12 +40,31 @@ ro_struct.f1 => '1'
 ro_struct.f2 => '2'
 array_of_ro_structs[0].f1 => '1'
 array_of_ro_structs[0].f2 => '2'
+required_struct_with_structs.f1 => '1'
+required_struct_with_structs.f2 => '2'
+required_struct_with_structs.s1.f1 => '1'
+required_struct_with_structs.s1.f2 => '2'
+required_struct_with_structs.s1.ss1.f1 => '1'
+required_struct_with_structs.s1.ss1.f2 => '2'
+array_with_required_structs_with_structs[0].f1 => '1'
+array_with_required_structs_with_structs[0].f2 => '2'
+array_with_required_structs_with_structs[0].s.f1 => '1'
+array_with_required_structs_with_structs[0].s.f2 => '2'
+array_with_required_structs_with_structs[1].f1 => '1'
+array_with_required_structs_with_structs[1].f2 => '2'
+array_with_required_structs_with_structs[1].s.f1 => '1'
+array_with_required_structs_with_structs[1].s.f2 => '2'
+array_with_required_structs_with_structs[2].f1 => '1'
+array_with_required_structs_with_structs[2].f2 => '2'
+array_with_required_structs_with_structs[2].s.f1 => '1'
+array_with_required_structs_with_structs[2].s.f2 => '2'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.array[0].subarray[0].subke12' is not set (or has a default value)
 Option 'asdf.array[2].subarray[3].subke12' is not set (or has a default value)
 Option 'test[1]' is not set
-Missed required: 4
+Option 'array_with_required_structs_with_structs[1]' is not set
+Missed required: 5
 root_array[1] is not defined
 root_array[2] is not defined
 ==========Dup=============
@@ -88,6 +107,24 @@ ro_struct.f1 => '1'
 ro_struct.f2 => '2'
 array_of_ro_structs[0].f1 => '1'
 array_of_ro_structs[0].f2 => '2'
+required_struct_with_structs.f1 => '1'
+required_struct_with_structs.f2 => '2'
+required_struct_with_structs.s1.f1 => '1'
+required_struct_with_structs.s1.f2 => '2'
+required_struct_with_structs.s1.ss1.f1 => '1'
+required_struct_with_structs.s1.ss1.f2 => '2'
+array_with_required_structs_with_structs[0].f1 => '1'
+array_with_required_structs_with_structs[0].f2 => '2'
+array_with_required_structs_with_structs[0].s.f1 => '1'
+array_with_required_structs_with_structs[0].s.f2 => '2'
+array_with_required_structs_with_structs[1].f1 => '1'
+array_with_required_structs_with_structs[1].f2 => '2'
+array_with_required_structs_with_structs[1].s.f1 => '1'
+array_with_required_structs_with_structs[1].s.f2 => '2'
+array_with_required_structs_with_structs[2].f1 => '1'
+array_with_required_structs_with_structs[2].f2 => '2'
+array_with_required_structs_with_structs[2].s.f1 => '1'
+array_with_required_structs_with_structs[2].s.f2 => '2'
 ==========Compare=========
 total: equal
 only_rdonly: equal
