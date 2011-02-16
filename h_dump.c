@@ -168,10 +168,17 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 
 	dumpRecursive(fh, name, &root);
 
-	fprintf(fh, "#define CNF_FLAG_STRUCT_NEW\t0x01\n");
-	fprintf(fh, "#define CNF_FLAG_STRUCT_NOTSET\t0x02\n\n");
-
-	fprintf(fh, "#define CNF_STRUCT_DEFINED(s) ((s) != NULL && ((s)->__confetti_flags & CNF_FLAG_STRUCT_NOTSET) == 0)\n\n");
+	fprintf(fh, 
+		"#ifndef CNF_FLAG_STRUCT_NEW\n"
+		"#define CNF_FLAG_STRUCT_NEW\t0x01\n"
+		"#endif\n"
+		"#ifndef CNF_FLAG_STRUCT_NOTSET\n"
+		"#define CNF_FLAG_STRUCT_NOTSET\t0x02\n"
+		"#endif\n"
+		"#ifndef CNF_STRUCT_DEFINED\n"
+		"#define CNF_STRUCT_DEFINED(s) ((s) != NULL && ((s)->__confetti_flags & CNF_FLAG_STRUCT_NOTSET) == 0)\n"
+		"#endif\n\n"
+	);
 
 	fprintf(fh, "int fill_default_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "void parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped);\n\n", name, name);
