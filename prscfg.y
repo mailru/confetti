@@ -12,6 +12,8 @@
 
 static int prscfg_yyerror(prscfg_yyscan_t yyscanner, char *msg);
 extern int prscfg_yylex (YYSTYPE * yylval_param, prscfg_yyscan_t yyscanner);
+static NameAtom* prependName(NameAtom *prep, NameAtom *name);
+static void freeName(NameAtom *atom);
 static OptDef	*output;
 
 #define MakeAtom(r, n)				do {		\
@@ -62,6 +64,18 @@ static OptDef	*output;
 	}                                       	\
 } while(0)
 
+#define SetSection(out, in, sec)	do {			\
+	OptDef	*opt;									\
+	opt = (out) = (in); 							\
+													\
+	while(opt) {									\
+		opt->name = prependName((sec), opt->name);	\
+													\
+		opt = opt->next;							\
+	}												\
+	freeName(sec);									\
+} while(0)
+
 %}
 
 %pure-parser
@@ -75,12 +89,12 @@ static OptDef	*output;
 %union		 {
 	char		*str;
 
-	OptDef	*node;
+	OptDef		*node;
 	NameAtom	*atom;
 }
 
 %type	<atom>		identifier elem_identifier keyname array_keyname
-%type	<node>		param param_list struct_list
+%type	<node>		param param_list struct_list section_list section
 %type	<node>		cfg
 %type   <str>		comma_opt
 
@@ -89,7 +103,7 @@ static OptDef	*output;
 %%
 
 cfg:
-	param_list		{ output = $$ = $1; }
+	section_list 	{ output = $$ = $1; }
 	;
 
 identifier:
@@ -125,6 +139,17 @@ array_keyname:
 param_list:
 	param				{ $$ = $1; }
 	| param_list comma_opt param	{ MakeList($$, $3, $1); /* plainOptDef will revert the list */ }
+	;
+
+section:
+	'[' keyname ']' param_list	{ SetSection($$, $4, $2); }
+	| '[' array_keyname ']' param_list	{ SetSection($$, $4, $2); }
+	;
+
+section_list:
+	param_list						{ $$ = $1; }
+	| section						{ $$ = $1; }
+	| section_list section			{ MakeList($$, $2, $1); }
 	;
 
 param:
@@ -189,11 +214,13 @@ cloneName(NameAtom *list, NameAtom **end) {
 			return NULL;
 		}
 		*ptr = *list;
-		ptr->name = strdup(ptr->name);
-		if (!ptr->name) {
-			out_warning(CNF_NOMEMORY, "No memory");
-			free(ptr);
-			return NULL;
+		if (ptr->name) {
+			ptr->name = strdup(ptr->name);
+			if (!ptr->name) {
+				out_warning(CNF_NOMEMORY, "No memory");
+				free(ptr);
+				return NULL;
+			}
 		}
 
 		if (newList) {
@@ -207,6 +234,22 @@ cloneName(NameAtom *list, NameAtom **end) {
 	}
 
 	return newList;
+}
+
+static NameAtom* 
+prependName(NameAtom *prep, NameAtom *name) {
+	NameAtom	*b, *e;
+
+	b = cloneName(prep, &e);
+
+	if (!b) {
+		out_warning(CNF_NOMEMORY, "No memory");
+		return NULL;
+	}
+
+	e->next = name;
+
+	return b;
 }
 
 static void

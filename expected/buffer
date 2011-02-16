@@ -20,6 +20,7 @@ asdf.array[2].subarray[2].subkey => '12'
 asdf.array[2].subarray[2].subke12 => '7654'
 asdf.array[2].subarray[3].subkey => '123456789'
 asdf.array[2].subarray[3].subke12 => '7654'
+asdf.k3 => (null)
 root_array[0].ra => '-1.344e-08'
 root_array[1].ra => '-1.344e-08'
 root_array[2].ra => '-1.344e-08'

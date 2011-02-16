@@ -14,6 +14,7 @@ struct (RW)	asdf
 				struct (RW)	(null)
 					int32_t (RW)	subkey
 					u_int64_t (RW, REQ)	subke12
+	char* (RW)	k3
 array (RW, REQ)	root_array
 	struct (RW)	(null)
 		double (RW, REQ)	ra
