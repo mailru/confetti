@@ -153,15 +153,15 @@ section_list:
 	;
 
 param:
-	keyname '=' NUMBER_P					{ MakeScalarParam($$, number, $1, $3); }
-	| keyname '=' STRING_P					{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' PATH_P					{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' KEY_P						{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' NULL_P					{ MakeScalarParam($$, string, $1, NULL); free($3); }
-	| keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	keyname '=' NUMBER_P								{ MakeScalarParam($$, number, $1, $3); }
+	| keyname '=' STRING_P								{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' PATH_P								{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' KEY_P									{ MakeScalarParam($$, string, $1, $3); }
+	| keyname '=' NULL_P								{ MakeScalarParam($$, string, $1, NULL); free($3); }
+	| keyname '=' '{' param_list comma_opt '}'			{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	| keyname '=' '[' struct_list comma_opt ']' 		{ $4->name = $1; $$ = $4; }
-	| keyname '=' '[' ']' 					{ MakeScalarParam($$, array, $1, NULL); }
-	| array_keyname '=' '{' param_list comma_opt '}' 	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	| keyname '=' '[' ']' 								{ MakeScalarParam($$, array, $1, NULL); }
+	| array_keyname '=' '{' param_list comma_opt '}'	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	;
 
 comma_opt:
@@ -171,7 +171,7 @@ comma_opt:
 
 struct_list:
 	'{' param_list comma_opt '}' {
-			OptDef	*str;
+			OptDef		*str;
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
@@ -182,7 +182,7 @@ struct_list:
 			SetParent( $$, str );
 		}
 	| struct_list comma_opt '{' param_list comma_opt '}' {
-			OptDef	*str;
+			OptDef		*str;
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
@@ -279,7 +279,7 @@ compileName(OptDef	*def) {
 				return 1;
 
 			if (index >= 0) {
-				beginPtr->index = index;
+				endPtr->index = index;
 				index = -1;
 			}
 
