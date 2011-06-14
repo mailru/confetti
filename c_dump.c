@@ -1436,6 +1436,19 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	dumpDefault(fh, def);
 	fputs("\treturn 0;\n}\n\n", fh);
 
+
+	fprintf(fh,
+		"void\n"
+		"swap_%s(struct %s *c1, struct %s *c2) {\n"
+		, name, name, name);
+
+	fprintf(fh,
+		"\tstruct %s tmpcfg = *c1;\n"
+		"\t*c1 = *c2;\n"
+		"\t*c2 = tmpcfg;\n"
+		"}\n\n", name);
+
+
 	dumpDefaultArray(fh, name, def);
 
 	dumpParamDefCNameRecursive(fh, def);
