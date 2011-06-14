@@ -98,6 +98,45 @@ dumpStructPath(FILE *fh, ParamDef *def, char *name) {
 }
 
 static void
+dumpInit(FILE *fh, ParamDef *def) {
+
+	while(def) {
+
+		fputs("\t", fh);
+		switch(def->paramType) {
+			case	int32Type:
+			case	uint32Type:
+			case	int64Type:
+			case	uint64Type:
+			case	doubleType:
+				dumpStructPath(fh, def, "c");
+				fprintf(fh, " = %"PRId32";\n", 0);
+				break;
+			case	stringType:
+				dumpStructPath(fh, def, "c");
+				fputs(" = NULL;\n", fh);
+				break;
+			case	commentType:
+				fprintf(stderr, "Unexpected comment");
+				break;
+			case	structType:
+				dumpStructPath(fh, def, "c");
+				fputs(" = NULL;\n", fh);
+				break;
+			case	arrayType:
+				dumpStructPath(fh, def, "c");
+				fprintf(fh, " = NULL;\n");
+				break;
+			default:
+				fprintf(stderr,"Unknown paramType (%d)\n", def->paramType);
+				exit(1);
+		}
+
+		def = def->next;
+	}
+}
+
+static void
 dumpDefault(FILE *fh, ParamDef *def) {
 
 	while(def) {
@@ -1378,10 +1417,19 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		fh
 	);
 
+	fprintf(fh,
+		"void\n"
+		"init_%s(%s *c) {\n"
+		"\tc->__confetti_flags = 0;\n\n"
+		, name, name);
+
+	dumpInit(fh, def);
+	fputs("}\n\n", fh);
 
 	fprintf(fh,
 		"int\n"
 		"fill_default_%s(%s *c) {\n"
+		"\tc->__confetti_flags = 0;\n\n"
 		, name, name
 	);
 
