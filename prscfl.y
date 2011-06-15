@@ -80,7 +80,7 @@ static ParamDef	*output;
 %type	<int32val>	flags_opt flag flag_list
 
 %token	<str>		KEY_P NULL_P STRING_P COMMENT_P RDONLY_P RDWR_P
-					BUILTIN_P REQUIRED_P 
+					BUILTIN_P REQUIRED_P FALSE_P TRUE_P 
 %token	<int32val>	INT32_P
 %token	<uint32val>	UINT32_P
 %token	<int64val>	INT64_P
@@ -103,6 +103,8 @@ cfg:
 identifier:
 	KEY_P			{ $$ = $1; }
 	| NULL_P		{ $$ = $1; }
+	| TRUE_P		{ $$ = $1; }
+	| FALSE_P		{ $$ = $1; }
 	| RDONLY_P		{ $$ = $1; }
 	| RDWR_P		{ $$ = $1; }
 	| REQUIRED_P	{ $$ = $1; }
@@ -158,6 +160,8 @@ param:
 	| identifier '=' DOUBLE_P			{ MakeScalarParam($$, double, $1, $3); }
 	| identifier '=' STRING_P			{ MakeScalarParam($$, string, $1, $3); }
 	| identifier '=' NULL_P				{ MakeScalarParam($$, string, $1, NULL); }
+	| identifier '=' TRUE_P				{ MakeScalarParam($$, bool, $1, true); }
+	| identifier '=' FALSE_P			{ MakeScalarParam($$, bool, $1, false); }
 	| identifier '=' '{' param_list '}' { MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
 	| identifier '=' '[' param_list ']' {
 											ParamDef *s;

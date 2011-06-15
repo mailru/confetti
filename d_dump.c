@@ -43,6 +43,9 @@ debugParamDef(ParamDef *def, int level) {
 			case	stringType:
 				printDef("char*", def);
 				break;
+			case	boolType:
+				printDef("bool", def);
+				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
 				break;

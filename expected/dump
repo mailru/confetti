@@ -47,3 +47,6 @@ array (RW)	array_with_required_structs_with_structs
 		struct (RW)	s
 			int32_t (RW)	f1
 			int32_t (RW)	f2
+			bool (RW)	f3
+bool (RW)	flsb
+bool (RW)	flst

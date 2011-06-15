@@ -72,6 +72,9 @@ dumpParamDef(FILE *fh, int level, ParamDef *def) {
 					fputs("NULL", fh);
 				}
 				break;
+			case	boolType:
+				fprintf(fh, "%s", def->paramValue.boolval ? "true" : "false");
+				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
 				break;

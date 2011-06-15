@@ -76,6 +76,10 @@ array_with_required_structs_with_structs = [
 		s = {
 			f1 = 1
 			f2 = 2
+			f3 = false
 		}
 	}, required
 ]
+
+flsb = false
+flst = true

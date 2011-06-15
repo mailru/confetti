@@ -52,6 +52,7 @@ dumpParamDefCNameRecursive(FILE *fh, ParamDef *def) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				fputs("static NameAtom ", fh);
 				dumpParamDefCName(fh, def);
 				fputs("[] = {\n", fh);
@@ -115,6 +116,10 @@ dumpInit(FILE *fh, ParamDef *def) {
 			case	stringType:
 				dumpStructPath(fh, def, "c");
 				fputs(" = NULL;\n", fh);
+				break;
+			case	boolType:
+				dumpStructPath(fh, def, "c");
+				fputs(" = false;\n", fh);
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment");
@@ -182,6 +187,10 @@ dumpDefault(FILE *fh, ParamDef *def) {
 					dumpStructPath(fh, def, "c");
 					fputs(" == NULL) return CNF_NOMEMORY;\n", fh);
 				}
+				break;
+			case	boolType:
+				dumpStructPath(fh, def, "c");
+				fprintf(fh, " = %s;\n", def->paramValue.boolval ? "true" : "false");
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
@@ -341,6 +350,7 @@ printIf(FILE *fh, ParamDef *def, int i) {
 			fputs("numberType", fh);
 			break;
 		case	stringType:
+		case	boolType:
 			fputs("stringType", fh);
 			break;
 		case	arrayType:
@@ -382,6 +392,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				printIf(fh, def, i);
 				fputs("\t\terrno = 0;\n", fh);
 				switch(def->paramType) {
@@ -463,6 +474,33 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs("\t\tif (opt->paramValue.stringval && ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" == NULL)\n\t\t\treturn CNF_NOMEMORY;\n", fh);
+						break;
+					case	boolType:
+						fputs("\t\tbool bln;\n\n", fh);
+						fputs("\t\tif (strcasecmp(opt->paramValue.stringval, \"true\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"yes\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"enable\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"on\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"1\") == 0 )\n", fh);
+						fputs("\t\t\tbln = true;\n", fh);
+						fputs("\t\telse if (strcasecmp(opt->paramValue.stringval, \"false\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"no\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"disable\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"off\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"0\") == 0 )\n", fh);
+						fputs("\t\t\tbln = false;\n", fh);
+						fputs("\t\telse\n", fh);
+						fputs("\t\t\treturn CNF_WRONGRANGE;\n", fh);
+
+						if (def->flags & PARAMDEF_RDONLY) {
+							fputs("\t\tif (check_rdonly && ", fh);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
+							fputs(" != bln)\n\t\t\treturn CNF_RDONLY;\n", fh);
+						}
+						fputs("\t\t", fh);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
+							fputs(" = bln;\n", fh);
+						break;
 					default:
 						break;
 				}
@@ -503,6 +541,7 @@ makeIteratorStates(FILE *fh, ParamDef *def) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				fputs("\tS", fh);
 				dumpParamDefCName(fh, def);
 				fputs(",\n", fh);
@@ -543,6 +582,7 @@ makeArrayIndexes(FILE *fh, ParamDef *def) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
@@ -588,6 +628,7 @@ makeSwitchArrayList(FILE *fh, ParamDef *def, int level) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				fputt(fh, level+2); fputs( "case S", fh);
 				dumpParamDefCName(fh, def);
 				fputs(":\n", fh);
@@ -684,6 +725,17 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			break;
+		case	boolType:
+			fputt(fh, level); fputs("*v = malloc(8);\n", fh);
+			fputt(fh, level); fputs("if (*v == NULL) {\n", fh);
+			fputt(fh, level+1); fputs("free(i);\n",fh); 
+			fputt(fh, level+1); fputs("out_warning(CNF_NOMEMORY, \"No memory to output value\");\n", fh);
+			fputt(fh, level+1); fputs("return NULL;\n",fh); 
+			fputt(fh, level); fputs("}\n",fh); 
+			fputt(fh, level); fputs("sprintf(*v, \"%s\", ", fh);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fputs(" ? \"true\" : \"false\");\n", fh);
+			break;
 		default:
 			break;
 	}
@@ -764,6 +816,7 @@ makeSwitch(FILE *fh, ParamDef *def, ParamDef *parent, int level, ParamDef *next)
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				/* case */
 				fputt(fh, level+2); fputs( "case S", fh);
 				dumpParamDefCName(fh, def);
@@ -988,6 +1041,14 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				}
 				makeOutCheck(fh, def, level);
 				break;
+			case	boolType:
+				if ((def->flags & PARAMDEF_REQUIRED) == 0)
+					break;
+				fputt(fh, level+1);
+				fputs("if (", fh);
+				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+				fprintf(fh, " == %s) {\n", def->paramValue.boolval ? "true" : "false");
+				makeOutCheck(fh, def, level);
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
@@ -1059,6 +1120,7 @@ makeCleanFlags(FILE *fh, ParamDef *def, int level) {
 			case	uint64Type:
 			case	doubleType:
 			case	stringType:
+			case	boolType:
 				break;
 			case	commentType:
 				break;
@@ -1109,6 +1171,7 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 			case	int64Type:
 			case	uint64Type:
 			case	doubleType:
+			case	boolType:
 				fputt(fh, level + 1);
 				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
@@ -1198,6 +1261,7 @@ makeDestroy(FILE *fh, ParamDef *def, int level) {
 			case	int64Type:
 			case	uint64Type:
 			case	doubleType:
+			case	boolType:
 			case	commentType:
 				break;
 			case	stringType:
@@ -1263,6 +1327,7 @@ makeCmp(FILE *fh, ParamDef *def, int level) {
 			case	int64Type:
 			case	uint64Type:
 			case	doubleType:
+			case	boolType:
 				if (!(def->flags & PARAMDEF_RDONLY)) {
 					fputts(fh, level + 1, "if (!only_check_rdonly) {\n");
 					level++;

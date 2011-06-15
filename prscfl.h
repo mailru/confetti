@@ -1,6 +1,7 @@
 #ifndef PRSCFL_H
 #define PRSCFL_H
 
+#include <stdbool.h>
 #include <sys/types.h>
 
 typedef struct prscfl_yy_extra_type {
@@ -33,10 +34,11 @@ typedef struct ParamDef {
 		uint64Type 	= 3,
 		doubleType 	= 4,
 		stringType 	= 5,
-		commentType = 6,
-		structType 	= 7,
-		arrayType	= 8,
-		builtinType = 9
+		boolType 	= 6,
+		commentType = 7,
+		structType 	= 8,
+		arrayType	= 9,
+		builtinType = 10
 	} paramType;
 
 	union {
@@ -45,6 +47,7 @@ typedef struct ParamDef {
 		u_int32_t		uint32val;
 		u_int64_t		uint64val;
 		double			doubleval;
+		bool			boolval;
 		char			*stringval;
 		char			*commentval;
 		struct ParamDef *structval;

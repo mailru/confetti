@@ -11,6 +11,8 @@ required_struct_with_structs.s1.f1 => '1'
 required_struct_with_structs.s1.f2 => '2'
 required_struct_with_structs.s1.ss1.f1 => '1'
 required_struct_with_structs.s1.ss1.f2 => '2'
+flsb => 'false'
+flst => 'true'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'root_array' is not set (or has a default value)
@@ -31,6 +33,8 @@ required_struct_with_structs.s1.f1 => '1'
 required_struct_with_structs.s1.f2 => '2'
 required_struct_with_structs.s1.ss1.f1 => '1'
 required_struct_with_structs.s1.ss1.f2 => '2'
+flsb => 'false'
+flst => 'true'
 ==========Compare=========
 total: equal
 only_rdonly: equal

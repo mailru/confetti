@@ -1,4 +1,4 @@
-==========Accepted: 27; Skipped: 0===========
+==========Accepted: 30; Skipped: 0===========
 foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'
@@ -26,6 +26,9 @@ array_with_required_structs_with_structs[0].f1 => '1'
 array_with_required_structs_with_structs[0].f2 => '2'
 array_with_required_structs_with_structs[0].s.f1 => '1'
 array_with_required_structs_with_structs[0].s.f2 => '2'
+array_with_required_structs_with_structs[0].s.f3 => 'false'
+flsb => 'false'
+flst => 'true'
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.k2' is not set (or has a default value)
@@ -61,6 +64,9 @@ array_with_required_structs_with_structs[0].f1 => '1'
 array_with_required_structs_with_structs[0].f2 => '2'
 array_with_required_structs_with_structs[0].s.f1 => '1'
 array_with_required_structs_with_structs[0].s.f2 => '2'
+array_with_required_structs_with_structs[0].s.f3 => 'false'
+flsb => 'false'
+flst => 'true'
 ==========Compare=========
 total: equal
 only_rdonly: equal

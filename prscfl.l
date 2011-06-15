@@ -39,8 +39,18 @@ DIGIT			[0-9]
 %%
 
 <INITIAL>[Nn][Uu][Ll][Ll]	{
-			yylval->str = strdup("NULL");
+			yylval->str = strdupn(yytext, yyleng);
 			return NULL_P;
+		}
+
+<INITIAL>[Tt][Rr][Uu][Ee]	{
+			yylval->str = strdupn(yytext, yyleng);
+			return TRUE_P;
+		}
+
+<INITIAL>[Ff][Aa][Ll][Ss][Ee]	{
+			yylval->str = strdupn(yytext, yyleng);
+			return FALSE_P;
 		}
 
 <INITIAL>[Rr][Oo]	{
