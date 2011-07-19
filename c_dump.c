@@ -365,12 +365,10 @@ printIf(FILE *fh, ParamDef *def, int i) {
 	if (def->paramType != arrayType) {
 		arrangeArray(fh, def);
 	} else {
-		int	n;
-
 		arrangeArray(fh, def->parent);
 
 		fputs("\t\tARRAYALLOC(", fh);
-		n = dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
+		dumpStructFullPath(fh, "c", "i", def, 0, 0, 1);
 		fputs(", 1, ", fh);
 		dumpParamDefCName(fh, def);
 		if (def->flags & PARAMDEF_RDONLY)
@@ -468,6 +466,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(") != 0))\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
+						fputs("\t\t if (", fh);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
+						fputs(") free(", fh);
+							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
+						fputs(");\n", fh);
 						fputs("\t\t", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
@@ -712,7 +715,8 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 				fputs(");\n", fh);
 			break;
 		case	stringType:
-			fputt(fh, level); fputs("*v = (", fh);
+			fputt(fh, level);
+			fputs("*v = (", fh);
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(") ? strdup(", fh);
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
