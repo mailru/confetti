@@ -1184,6 +1184,13 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 				break;
 			case	stringType:
 				fputt(fh, level + 1);
+
+				fputs("if (", fh);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
+				fputs(") free(", fh);
+				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
+				fputs(");", fh);
+
 				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" = ", fh);
 				dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
