@@ -8,7 +8,7 @@
 #include <prscfl.h>
 #include <prscfl_gram.h>
 
-static int prscfl_yyerror(prscfl_yyscan_t yyscanner, char *msg);
+static int prscfl_yyerror(prscfl_yyscan_t yyscanner, const char *msg);
 extern int prscfl_yylex (YYSTYPE * yylval_param, prscfl_yyscan_t yyscanner);
 static ParamDef	*output;
 
@@ -184,7 +184,7 @@ param:
 %%
 
 static int
-prscfl_yyerror(prscfl_yyscan_t yyscanner, char *msg) {
+prscfl_yyerror(prscfl_yyscan_t yyscanner, const char *msg) {
     fprintf(stderr, "gram_yyerror: %s at line %d\n", msg, prscflGetLineNo(yyscanner));
 	return 0;
 }
