@@ -190,7 +190,7 @@ dumpDefault(FILE *fh, ParamDef *def) {
 				break;
 			case	boolType:
 				dumpStructPath(fh, def, "c");
-				fprintf(fh, " = %s;\n", def->paramValue.boolval ? "true" : "false");
+				fprintf(fh, " = %s;\n", def->flags & PARAMDEF_REQUIRED ? "-1" : def->paramValue.boolval ? "true" : "false");
 				break;
 			case	commentType:
 				fprintf(stderr, "Unexpected comment"); 
@@ -350,8 +350,10 @@ printIf(FILE *fh, ParamDef *def, int i) {
 			fputs("numberType", fh);
 			break;
 		case	stringType:
-		case	boolType:
 			fputs("stringType", fh);
+			break;
+		case	boolType:
+			fputs("stringType && opt->paramType != numberType", fh);
 			break;
 		case	arrayType:
 			fputs("arrayType", fh);
@@ -480,7 +482,13 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						break;
 					case	boolType:
 						fputs("\t\tbool bln;\n\n", fh);
-						fputs("\t\tif (strcasecmp(opt->paramValue.stringval, \"true\") == 0 ||\n", fh);
+						fputs("\t\tif (opt->paramType == numberType) {\n", fh);
+						fputs("\t\t\tif (strcmp(opt->paramValue.numberval, \"0\") == 0 || strcmp(opt->paramValue.numberval, \"1\") == 0)\n", fh);
+						fputs("\t\t\t\tbln = opt->paramValue.numberval[0] - '0';\n", fh);
+						fputs("\t\t\telse\n", fh);
+						fputs("\t\t\t\treturn CNF_WRONGRANGE;\n", fh);
+						fputs("\t\t}\n", fh);
+						fputs("\t\telse if (strcasecmp(opt->paramValue.stringval, \"true\") == 0 ||\n", fh);
 						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"yes\") == 0 ||\n", fh);
 						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"enable\") == 0 ||\n", fh);
 						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"on\") == 0 ||\n", fh);
@@ -1051,7 +1059,7 @@ makeCheck(FILE *fh, ParamDef *def, int level) {
 				fputt(fh, level+1);
 				fputs("if (", fh);
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
-				fprintf(fh, " == %s) {\n", def->paramValue.boolval ? "true" : "false");
+				fputs(" == -1) {\n", fh);
 				makeOutCheck(fh, def, level);
 				break;
 			case	commentType:
