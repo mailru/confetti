@@ -1210,9 +1210,10 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 				fputs("\n", fh);
 				fputt(fh, level + 1);
 				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
-				fputs(" = malloc(sizeof( *(", fh);
+				fputs(" = calloc(1, sizeof(*(", fh);
 				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(") ));\n", fh);
+
 				fputts(fh, level + 1, "if (");
 				dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
 				fputs(" == NULL)\n", fh);
