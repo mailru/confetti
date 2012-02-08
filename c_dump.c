@@ -745,6 +745,12 @@ strdupValue(FILE *fh, ParamDef *def, int level) {
 			fputt(fh, level+1); fputs("return NULL;\n",fh); 
 			fputt(fh, level); fputs("}\n",fh); 
 			fputt(fh, level); fputs("sprintf(*v, \"%s\", ", fh);
+				if (def->flags & PARAMDEF_REQUIRED) {
+					dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
+					fputs(" == -1 ? ", fh);
+					fputs(def->paramValue.boolval ? "\"true\"" : "\"false\"", fh);
+					fputs(" : ", fh);
+				}
 				dumpStructFullPath(fh, "c", "i", def, 0, 1, 1);
 				fputs(" ? \"true\" : \"false\");\n", fh);
 			break;
