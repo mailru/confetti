@@ -1261,6 +1261,11 @@ makeDup(FILE *fh, ParamDef *def, int level) {
 						fputs(" + 1, ", fh);
 						dumpParamDefCName(fh, def);
 						fputs(", 0, 0);\n\n", fh);
+						fputt(fh, level + 3);
+						dumpStructFullPath(fh, "dst", "i", def, 1, 1, 1);
+						fputs("->__confetti_flags = ", fh);
+						dumpStructFullPath(fh, "src", "i", def, 1, 1, 1);
+						fputs("->__confetti_flags;\n", fh);
 						makeDup(fh, def->paramValue.arrayval->paramValue.structval, level + 2);
 						fputs("\n", fh);
 						fputts(fh, level + 1, "\t\ti->idx");
