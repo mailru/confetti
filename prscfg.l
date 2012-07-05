@@ -30,12 +30,19 @@ static YY_BUFFER_STATE buf = NULL;
 %option warn
 
 %x xQUOTED
-%x SCOMMENT
 %x CCOMMENT
 
 KEYCHARSTART	[a-zA-Z_]
 KEYCHAR			[a-zA-Z0-9_]
 DIGIT			[0-9]
+
+/* Chars that may comprise a non-quoted string. */
+STRINGCHAR		[^ \t\f\r\n\[\]{}\"=,.]
+
+/* Chars that may comprise a non-quoted path string. A path is identified
+   by the presence of a slash and it allows dots in addition to regular
+   non-quoted string chars. */
+PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 
 %%
 
@@ -46,30 +53,26 @@ DIGIT			[0-9]
 			return NULL_P;
 		}
 
-<INITIAL>\/\* {
-			yyextra->commentCounter=1;
-			BEGIN CCOMMENT;
+<INITIAL>[Oo][Pp][Tt] {
+			yylval->str = strdup("OPT");
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);	
+			return OPT_P;
 		}
 
 <INITIAL>{KEYCHARSTART}{KEYCHAR}*	{
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
-			return	KEY_P;
+			return KEY_P;
 		}
 
-<INITIAL>#[ \t]* {
-			BEGIN SCOMMENT;
-		}
-
-<INITIAL>\/[a-zA-Z0-9\.\-\\%\/_]+ {
+<INITIAL>{DIGIT}+ {
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);
-			return PATH_P;
+				scan_yyerror("No memory", yyextra->lineno);	
+			return NATURAL_P;
 		}
-
-<INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
 
 <INITIAL>\"	{
 			yyextra->total = 256;
@@ -80,39 +83,54 @@ DIGIT			[0-9]
 			BEGIN xQUOTED;
 	}
 
-<INITIAL>[\-\+]?{DIGIT}+ {
-			yylval->str = strdupn(yytext, yyleng);
-			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);	
-			return NUMBER_P;
+<INITIAL>\/\* {
+			yyextra->commentCounter=1;
+			BEGIN CCOMMENT;
 		}
 
-<INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+ {
+<INITIAL>{PATHCHAR}*(\/{PATHCHAR}*)+ {
+			/* Accept an unquoted path-like string. */
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);	
-			return NUMBER_P;
+				scan_yyerror("No memory", yyextra->lineno);
+			return STRING_P;
 		}
 
-<INITIAL>[\+\-]?{DIGIT}+[eE][\+\-]?{DIGIT}+ {
+<INITIAL>[+-]?{DIGIT}+"."{STRINGCHAR}+ {
+			/* Accept an unquoted fpnum-like string. */
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);	
-			return NUMBER_P;
+				scan_yyerror("No memory", yyextra->lineno);
+			return STRING_P;
 		}
 
-<INITIAL>[\+\-]?{DIGIT}+"."{DIGIT}+[eE][\+\-]?{DIGIT}+ {
+<INITIAL>{STRINGCHAR}+ {
+			/* Accept an unquoted string. */
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);	
-			return NUMBER_P;
+				scan_yyerror("No memory", yyextra->lineno);
+			return STRING_P;
+}
+
+<INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
+
+<INITIAL>#[^\n]*		{ /* ignore single-line comment */ }
+
+<INITIAL>[ \t\r\f]+   	{ /* ignore whitespace */ }
+
+<INITIAL>\n   			{ yyextra->lineno++; }
+
+<INITIAL><<EOF>> {
+			yyterminate();
 		}
+
+<INITIAL>. { return scan_yyerror("syntax error: Unknown character", yyextra->lineno); }
 
 <xQUOTED>\\.  {
 			if (addchar(yyscanner, yytext[1]))
 				scan_yyerror("No memory", yyextra->lineno);
 		}
-							 
+
 <xQUOTED>\\\n  {
 			yyextra->lineno++;
 		}
@@ -129,10 +147,6 @@ DIGIT			[0-9]
 			/* This is only needed for \ just before EOF */
 		}
 
-<xQUOTED><<EOF>> {
-			return scan_yyerror("Unexpected end of string", yyextra->lineno);
-		}
-
 <xQUOTED>[^\\\"\n]+   {
 			if (addstring(yyscanner, yytext, yyleng))
 				scan_yyerror("No memory", yyextra->lineno);
@@ -142,6 +156,10 @@ DIGIT			[0-9]
 			if (addchar(yyscanner, yytext[0]))
 				scan_yyerror("No memory", yyextra->lineno);
 			yyextra->lineno++;
+		}
+
+<xQUOTED><<EOF>> {
+			return scan_yyerror("Unexpected end of string", yyextra->lineno);
 		}
 
 <CCOMMENT>\/\*  {
@@ -154,30 +172,13 @@ DIGIT			[0-9]
 				BEGIN INITIAL;
 		}
 
-<CCOMMENT><<EOF>> {
-			return scan_yyerror("Unexpected end of string (inside comment)", yyextra->lineno);
-		}
+<CCOMMENT>\n 	{ yyextra->lineno++; }
 
 <CCOMMENT>.+ 	{ /* ignore */ }
 
-<CCOMMENT>\n 	{ yyextra->lineno++; }
-
-<SCOMMENT>.+   	{ /* ignore */ }
-
-<SCOMMENT>\n    { 
-			BEGIN INITIAL; 
-			yyextra->lineno++;
+<CCOMMENT><<EOF>> {
+			return scan_yyerror("Unexpected end of string (inside comment)", yyextra->lineno);
 		}
-
-<INITIAL,SCOMMENT><<EOF>> {
-			yyterminate();
-		}
-
-<INITIAL>[ \t\r\f]+   	{ /* ignore */ }
-
-<INITIAL>\n   			{ yyextra->lineno++; }
-
-<INITIAL>. { return scan_yyerror("syntax error: Unknown character", yyextra->lineno); }
 
 %%
 

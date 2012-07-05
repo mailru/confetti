@@ -1,4 +1,4 @@
-==========Accepted: 30; Skipped: 0===========
+==========Accepted: 30; Skipped: 0; Optional: 0===========
 foo => '1234'
 bar => '-54321'
 asdf.k1 => 'as"d'

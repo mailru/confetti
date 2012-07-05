@@ -20,7 +20,7 @@ main(int argc __attribute__ ((unused)), char* argv[] __attribute__ ((unused))) {
 	my_product	cfg;
 	my_product_iterator_t	*i;
 	char		*key, *value;
-	int			nAccepted, nSkipped;
+	int			nAccepted, nSkipped, nOptional;
 
 	fill_default_my_product(&cfg);
 
@@ -28,11 +28,12 @@ main(int argc __attribute__ ((unused)), char* argv[] __attribute__ ((unused))) {
 		&cfg,
 		"asdf.array[2].subarray[3].subkey = 123456789 "
 		"root_array[3].ra = 12 "
-		"asdf.k2=\"NEWVALUE\"" ,
-		0, &nAccepted, &nSkipped
+		"asdf.k2=\"NEWVALUE\" " 
+		"opt no_such_param = 123",
+		0, &nAccepted, &nSkipped, &nOptional
 	);
 
-	printf("==========Accepted: %d; Skipped: %d===========\n", nAccepted, nSkipped);
+	printf("==========Accepted: %d; Skipped: %d; Optional: %d===========\n", nAccepted, nSkipped, nOptional);
 
 	i = my_product_iterator_init();
 	while ( (key = my_product_iterator_next(i, &cfg, &value)) != NULL ) {

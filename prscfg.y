@@ -27,13 +27,14 @@ static OptDef	*output;
 	(r)->next = NULL;							\
 } while(0)
 
-#define MakeScalarParam(r, t, n, v)	do {  		\
+#define MakeScalarParam(r, t, n, v, p)	do {  	\
 	(r) = malloc(sizeof(OptDef));				\
 	if (!(r)) {									\
 		prscfg_yyerror(yyscanner, "No memory");	\
 		YYERROR;								\
 	}											\
 	(r)->paramType = t##Type;					\
+	(r)->optional = p;							\
 	(r)->paramValue.t##val = (v);				\
 	(r)->name = (n);							\
 	(r)->parent = NULL;							\
@@ -88,22 +89,50 @@ static OptDef	*output;
 
 %union		 {
 	char		*str;
-
 	OptDef		*node;
 	NameAtom	*atom;
+	int			flag;
 }
 
+%type	<node>		cfg section_list default_section named_section
+
+%type	<node>		param param_list struct_list
+
 %type	<atom>		identifier elem_identifier keyname array_keyname
-%type	<node>		param param_list struct_list section_list section
-%type	<node>		cfg
+%type	<atom>		section_name
+
+%type	<flag>		opt;
+
 %type   <str>		comma_opt
 
-%token	<str>		KEY_P NULL_P STRING_P NUMBER_P PATH_P
+%token	<str>		NULL_P OPT_P KEY_P NATURAL_P STRING_P
 
 %%
 
 cfg:
 	section_list 	{ output = $$ = $1; }
+	;
+
+section_list:
+	default_section					{ $$ = $1; }
+	| named_section					{ $$ = $1; }
+	| section_list named_section	{ MakeList($$, $2, $1); }
+	;
+	
+default_section:
+	param_list		{ $$ = $1; }
+
+named_section:
+	'[' section_name ']' param_list	{ SetSection($$, $4, $2); }
+	;
+	
+section_name:
+	keyname			{ $$ = $1; }
+	| array_keyname	{ $$ = $1; }
+
+param_list:
+	param							{ $$ = $1; }
+	| param_list comma_opt param	{ MakeList($$, $3, $1); /* plainOptDef will revert the list */ }
 	;
 
 identifier:
@@ -113,7 +142,7 @@ identifier:
 
 elem_identifier:
 	identifier						{ $$ = $1; }
-	| identifier '[' NUMBER_P ']'	{ 
+	| identifier '[' NATURAL_P ']'	{ 
 			$$ = $1; 
 			$$->index = atoi($3);
 			/* XXX check !*/
@@ -127,7 +156,7 @@ keyname:
 	;
 
 array_keyname:
-	identifier '[' NUMBER_P ']'		{ 
+	identifier '[' NATURAL_P ']'		{ 
 			$$ = $1;
 			$$->index = atoi($3);
 			/* XXX check !*/
@@ -136,33 +165,20 @@ array_keyname:
 	| elem_identifier '.' array_keyname { MakeList($$, $1, $3); }
 	;
 
-param_list:
-	param				{ $$ = $1; }
-	| param_list comma_opt param	{ MakeList($$, $3, $1); /* plainOptDef will revert the list */ }
-	;
-
-section:
-	'[' keyname ']' param_list	{ SetSection($$, $4, $2); }
-	| '[' array_keyname ']' param_list	{ SetSection($$, $4, $2); }
-	;
-
-section_list:
-	param_list						{ $$ = $1; }
-	| section						{ $$ = $1; }
-	| section_list section			{ MakeList($$, $2, $1); }
-	;
-
 param:
-	keyname '=' NUMBER_P								{ MakeScalarParam($$, number, $1, $3); }
-	| keyname '=' STRING_P								{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' PATH_P								{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' KEY_P									{ MakeScalarParam($$, string, $1, $3); }
-	| keyname '=' NULL_P								{ MakeScalarParam($$, string, $1, NULL); free($3); }
-	| keyname '=' '{' param_list comma_opt '}'			{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
-	| keyname '=' '[' struct_list comma_opt ']' 		{ $4->name = $1; $$ = $4; }
-	| keyname '=' '[' ']' 								{ MakeScalarParam($$, array, $1, NULL); }
-	| array_keyname '=' '{' param_list comma_opt '}'	{ MakeScalarParam($$, struct, $1, $4); SetParent( $$, $4 ); }
+	opt keyname '=' NULL_P								{ MakeScalarParam($$, scalar, $2, NULL, $1); free($4); }
+	| opt keyname '=' OPT_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' KEY_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' NATURAL_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' STRING_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
+	| opt keyname '=' '[' struct_list comma_opt ']' 	{ $5->name = $2; $5->optional = $1; $$ = $5; }
+	| opt keyname '=' '[' ']' 							{ MakeScalarParam($$, array, $2, NULL, $1); }
+	| opt array_keyname '=' '{' param_list comma_opt '}' { MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
 	;
+	
+opt: /* empty */	{ $$ = 0; }
+	| OPT_P			{ $$ = 1; free($1); }
 
 comma_opt:
 	','				{ $$=NULL; }
@@ -175,10 +191,10 @@ struct_list:
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
-			MakeScalarParam(str, struct, idx, $2); 
+			MakeScalarParam(str, struct, idx, $2, 0); 
 			SetParent( str, $2 );
 			SetIndex( str, 0 );
-			MakeScalarParam($$, array, NULL, str);
+			MakeScalarParam($$, array, NULL, str, 0);
 			SetParent( $$, str );
 		}
 	| struct_list comma_opt '{' param_list comma_opt '}' {
@@ -186,7 +202,7 @@ struct_list:
 			NameAtom	*idx;
 
 			MakeAtom(idx, NULL);
-			MakeScalarParam(str, struct, idx, $4); 
+			MakeScalarParam(str, struct, idx, $4, 0);
 			SetParent(str, $4);
 			SetIndex(str, $1->paramValue.arrayval->name->index + 1);
 			MakeList($1->paramValue.arrayval, str, $1->paramValue.arrayval); 
@@ -303,8 +319,7 @@ plainOptDef(OptDef *def, OptDef *list) {
 
 	while(def) {
 		switch(def->paramType) {
-			case numberType:
-			case stringType:
+			case scalarType:
 				ptr = malloc(sizeof(*ptr));
 				if (!ptr) {
 					out_warning(CNF_NOMEMORY, "No memory");
@@ -370,11 +385,8 @@ freeCfgDef(OptDef *def) {
 
 	while(def) {
 		switch(def->paramType) {
-			case numberType:
-				free(def->paramValue.numberval);
-				break;
-			case stringType:
-				free(def->paramValue.stringval);
+			case scalarType:
+				free(def->paramValue.scalarval);
 				break;
 			case structType:
 				freeCfgDef(def->paramValue.structval);

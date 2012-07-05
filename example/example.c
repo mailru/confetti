@@ -35,7 +35,7 @@ main(int argc, char* argv[]) {
 	}
 
 	if (argc > 1) {
-		int			nAccepted, nSkipped;
+		int			nAccepted, nSkipped, nOptional;
 		FILE *fh = fopen(argv[1], "r");
 
 		if (!fh) {
@@ -44,9 +44,9 @@ main(int argc, char* argv[]) {
 		}
 
 		useStdout = 1;
-		parse_cfg_file_my_product(&cfg, fh, 1, &nAccepted, &nSkipped);
+		parse_cfg_file_my_product(&cfg, fh, 1, &nAccepted, &nSkipped, &nOptional);
 
-		printf("==========Accepted: %d; Skipped: %d===========\n", nAccepted, nSkipped);
+		printf("==========Accepted: %d; Skipped: %d; Optional: %d===========\n", nAccepted, nSkipped, nOptional);
 
 		fclose(fh);
 	}

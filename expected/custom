@@ -1,6 +1,6 @@
 Could not accept read only 'ro_struct.f1' option
 Could not accept read only 'array_of_ro_structs[0].f1' option
-==========Accepted: 37; Skipped: 2===========
+==========Accepted: 37; Skipped: 2; Optional: 0===========
 foo => '1234'
 bar => '-987654'
 asdf.k1 => 'as"d'

@@ -347,13 +347,9 @@ printIf(FILE *fh, ParamDef *def, int i) {
 		case	int64Type:
 		case	uint64Type:
 		case	doubleType:
-			fputs("numberType", fh);
-			break;
 		case	stringType:
-			fputs("stringType", fh);
-			break;
 		case	boolType:
-			fputs("stringType && opt->paramType != numberType", fh);
+			fputs("scalarType", fh);
 			break;
 		case	arrayType:
 			fputs("arrayType", fh);
@@ -397,7 +393,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 				fputs("\t\terrno = 0;\n", fh);
 				switch(def->paramType) {
 					case	int32Type:
-						fputs("\t\tlong int i32 = strtol(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tlong int i32 = strtol(opt->paramValue.scalarval, NULL, 10);\n", fh);
 						fputs("\t\tif (i32 == 0 && errno == EINVAL)\n\t\t\treturn CNF_WRONGINT;\n", fh);
 						fputs("\t\tif ( (i32 == LONG_MIN || i32 == LONG_MAX) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
@@ -410,7 +406,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							fputs(" = i32;\n", fh);
 						break;
 					case	uint32Type:
-						fputs("\t\tunsigned long int u32 = strtoul(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tunsigned long int u32 = strtoul(opt->paramValue.scalarval, NULL, 10);\n", fh);
 						fputs("\t\tif (u32 == 0 && errno == EINVAL)\n\t\t\treturn CNF_WRONGINT;\n", fh);
 						fputs("\t\tif ( u32 == ULONG_MAX && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
@@ -423,7 +419,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							fputs(" = u32;\n", fh);
 						break;
 					case	int64Type:
-						fputs("\t\tlong long int i64 = strtoll(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tlong long int i64 = strtoll(opt->paramValue.scalarval, NULL, 10);\n", fh);
 						fputs("\t\tif (i64 == 0 && errno == EINVAL)\n\t\t\treturn CNF_WRONGINT;\n", fh);
 						fputs("\t\tif ( (i64 == LLONG_MIN || i64 == LLONG_MAX) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
@@ -436,7 +432,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							fputs(" = i64;\n", fh);
 						break;
 					case	uint64Type:
-						fputs("\t\tunsigned long long int u64 = strtoull(opt->paramValue.numberval, NULL, 10);\n", fh);
+						fputs("\t\tunsigned long long int u64 = strtoull(opt->paramValue.scalarval, NULL, 10);\n", fh);
 						fputs("\t\tif (u64 == 0 && errno == EINVAL)\n\t\t\treturn CNF_WRONGINT;\n", fh);
 						fputs("\t\tif ( u64 == ULLONG_MAX && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
@@ -449,7 +445,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 							fputs(" = u64;\n", fh);
 						break;
 					case	doubleType:
-						fputs("\t\tdouble dbl = strtod(opt->paramValue.numberval, NULL);\n", fh); 
+						fputs("\t\tdouble dbl = strtod(opt->paramValue.scalarval, NULL);\n", fh); 
 						fputs("\t\tif ( (dbl == 0 || dbl == -HUGE_VAL || dbl == HUGE_VAL) && errno == ERANGE)\n\t\t\treturn CNF_WRONGRANGE;\n", fh);
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ", fh);
@@ -462,9 +458,9 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						break;
 					case	stringType:
 						if (def->flags & PARAMDEF_RDONLY) {
-							fputs("\t\tif (check_rdonly && ( (opt->paramValue.stringval == NULL && ", fh);
+							fputs("\t\tif (check_rdonly && ( (opt->paramValue.scalarval == NULL && ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
-							fputs(" == NULL) || strcmp(opt->paramValue.stringval, ", fh);
+							fputs(" == NULL) || strcmp(opt->paramValue.scalarval, ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(") != 0))\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
@@ -475,30 +471,24 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						fputs(");\n", fh);
 						fputs("\t\t", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
-							fputs(" = (opt->paramValue.stringval) ? strdup(opt->paramValue.stringval) : NULL;\n", fh);
-						fputs("\t\tif (opt->paramValue.stringval && ", fh);
+							fputs(" = (opt->paramValue.scalarval) ? strdup(opt->paramValue.scalarval) : NULL;\n", fh);
+						fputs("\t\tif (opt->paramValue.scalarval && ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(" == NULL)\n\t\t\treturn CNF_NOMEMORY;\n", fh);
 						break;
 					case	boolType:
 						fputs("\t\tbool bln;\n\n", fh);
-						fputs("\t\tif (opt->paramType == numberType) {\n", fh);
-						fputs("\t\t\tif (strcmp(opt->paramValue.numberval, \"0\") == 0 || strcmp(opt->paramValue.numberval, \"1\") == 0)\n", fh);
-						fputs("\t\t\t\tbln = opt->paramValue.numberval[0] - '0';\n", fh);
-						fputs("\t\t\telse\n", fh);
-						fputs("\t\t\t\treturn CNF_WRONGRANGE;\n", fh);
-						fputs("\t\t}\n", fh);
-						fputs("\t\telse if (strcasecmp(opt->paramValue.stringval, \"true\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"yes\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"enable\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"on\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"1\") == 0 )\n", fh);
+						fputs("\t\tif (strcasecmp(opt->paramValue.scalarval, \"true\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"yes\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"enable\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"on\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"1\") == 0 )\n", fh);
 						fputs("\t\t\tbln = true;\n", fh);
-						fputs("\t\telse if (strcasecmp(opt->paramValue.stringval, \"false\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"no\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"disable\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"off\") == 0 ||\n", fh);
-						fputs("\t\t\t\tstrcasecmp(opt->paramValue.stringval, \"0\") == 0 )\n", fh);
+						fputs("\t\telse if (strcasecmp(opt->paramValue.scalarval, \"false\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"no\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"disable\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"off\") == 0 ||\n", fh);
+						fputs("\t\t\t\tstrcasecmp(opt->paramValue.scalarval, \"0\") == 0 )\n", fh);
 						fputs("\t\t\tbln = false;\n", fh);
 						fputs("\t\telse\n", fh);
 						fputs("\t\t\treturn CNF_WRONGRANGE;\n", fh);
@@ -1590,7 +1580,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fputs(
 		"\telse {\n"
-		"\t\treturn CNF_MISSED;\n"
+		"\t\treturn opt->optional ? CNF_OPTIONAL : CNF_MISSED;\n"
 		"\t}\n"
 		"\treturn CNF_OK;\n"
 		"}\n\n",
@@ -1623,17 +1613,22 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fprintf(fh,
 		"static void\n"
-		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
 		"\tConfettyError	r;\n"
 		"\tOptDef		*orig_opt = opt;\n\n"
 		"\tif (n_accepted) *n_accepted=0;\n"
 		"\tif (n_skipped) *n_skipped=0;\n"
+		"\tif (n_optional) *n_optional=0;\n"
 		"\n"
 		"\twhile(opt) {\n"
 		"\t\tr = acceptValue(c, opt, check_rdonly);\n"
 		"\t\tswitch(r) {\n"
 		"\t\t\tcase CNF_OK:\n"
 		"\t\t\t\tif (n_accepted) (*n_accepted)++;\n"
+		"\t\t\t\tbreak;\n"
+		"\t\t\tcase CNF_OPTIONAL:\n"
+		"\t\t\t\tout_warning(r, \"Option '%cs' is not supported\", dumpOptDef(opt->name));\n"
+		"\t\t\t\tif (n_optional) (*n_optional)++;\n"
 		"\t\t\t\tbreak;\n"
 		"\t\t\tcase CNF_MISSED:\n"
 		"\t\t\t\tout_warning(r, \"Could not find '%cs' option\", dumpOptDef(opt->name));\n"
@@ -1677,15 +1672,15 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\n"
 		"\tcleanFlags(c, orig_opt);\n"
 		"}\n\n"
-		, name, '%', '%', '%', '%', '%', '%', '%', '%', '%'
+		, name, '%', '%', '%', '%', '%', '%', '%', '%', '%', '%'
 	); 
 
 	fprintf(fh,
 		"void\n"
-		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
 		"\tOptDef *option;\n\n"
 		"\toption = parseCfgDef(fh);\n"
-		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped);\n"
+		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped, n_optional);\n"
 		"\tfreeCfgDef(option);\n"
 		"}\n\n"
 		, name, name
@@ -1693,10 +1688,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 
 	fprintf(fh,
 		"void\n"
-		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped) {\n"
+		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
 		"\tOptDef *option;\n\n"
 		"\toption = parseCfgDefBuffer(buffer);\n"
-		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped);\n"
+		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped, n_optional);\n"
 		"\tfreeCfgDef(option);\n"
 		"}\n\n"
 		, name, name
