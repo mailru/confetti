@@ -37,7 +37,7 @@ KEYCHAR			[a-zA-Z0-9_]
 DIGIT			[0-9]
 
 /* Chars that may comprise a non-quoted string. */
-STRINGCHAR		[^ \t\f\r\n\[\]{}\"=,.]
+STRINGCHAR		[^ \t\f\r\n\[\]{}\"=,.#]
 
 /* Chars that may comprise a non-quoted path string. A path is identified
    by the presence of a slash and it allows dots in addition to regular
