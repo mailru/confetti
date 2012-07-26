@@ -94,7 +94,7 @@ static OptDef	*output;
 	int			flag;
 }
 
-%type	<node>		cfg section_list default_section named_section
+%type	<node>		cfg section_list section named_section
 
 %type	<node>		param param_list struct_list
 
@@ -114,16 +114,16 @@ cfg:
 	;
 
 section_list:
-	default_section					{ $$ = $1; }
-	| named_section					{ $$ = $1; }
+	section					{ $$ = $1; }
 	| section_list named_section	{ MakeList($$, $2, $1); }
 	;
 	
-default_section:
-	param_list		{ $$ = $1; }
+section:
+	/* empty */		{ $$ = NULL; }
+	| param_list		{ $$ = $1; }
 
 named_section:
-	'[' section_name ']' param_list	{ SetSection($$, $4, $2); }
+	'[' section_name ']' section	{ SetSection($$, $4, $2); }
 	;
 	
 section_name:
