@@ -117,37 +117,36 @@ section_list:
 	section					{ $$ = $1; }
 	| section_list named_section	{ MakeList($$, $2, $1); }
 	;
-	
+
 section:
 	/* empty */		{ $$ = NULL; }
 	| param_list		{ $$ = $1; }
+	;
 
 named_section:
 	'[' section_name ']' section	{ SetSection($$, $4, $2); }
 	;
-	
-section_name:
-	keyname			{ $$ = $1; }
-	| array_keyname	{ $$ = $1; }
 
 param_list:
 	param							{ $$ = $1; }
 	| param_list comma_opt param	{ MakeList($$, $3, $1); /* plainOptDef will revert the list */ }
 	;
 
-identifier:
-	KEY_P			{ MakeAtom($$, $1); }
-	| NULL_P		{ MakeAtom($$, $1); }
+param:
+	opt keyname '=' NULL_P								{ MakeScalarParam($$, scalar, $2, NULL, $1); free($4); }
+	| opt keyname '=' OPT_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' KEY_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' NATURAL_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' STRING_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
+	| opt keyname '=' '[' ']' 							{ MakeScalarParam($$, array, $2, NULL, $1); }
+	| opt keyname '=' '[' struct_list comma_opt ']' 	{ $5->name = $2; $5->optional = $1; $$ = $5; }
+	| opt keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
+	| opt array_keyname '=' '{' param_list comma_opt '}' { MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
 	;
 
-elem_identifier:
-	identifier						{ $$ = $1; }
-	| identifier '[' NATURAL_P ']'	{ 
-			$$ = $1; 
-			$$->index = atoi($3);
-			/* XXX check !*/
-			free($3);
-		}
+section_name:
+	keyname			{ $$ = $1; }
+	| array_keyname	{ $$ = $1; }
 	;
 
 keyname:
@@ -165,24 +164,14 @@ array_keyname:
 	| elem_identifier '.' array_keyname { MakeList($$, $1, $3); }
 	;
 
-param:
-	opt keyname '=' NULL_P								{ MakeScalarParam($$, scalar, $2, NULL, $1); free($4); }
-	| opt keyname '=' OPT_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
-	| opt keyname '=' KEY_P								{ MakeScalarParam($$, scalar, $2, $4, $1); }
-	| opt keyname '=' NATURAL_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
-	| opt keyname '=' STRING_P							{ MakeScalarParam($$, scalar, $2, $4, $1); }
-	| opt keyname '=' '{' param_list comma_opt '}'		{ MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
-	| opt keyname '=' '[' struct_list comma_opt ']' 	{ $5->name = $2; $5->optional = $1; $$ = $5; }
-	| opt keyname '=' '[' ']' 							{ MakeScalarParam($$, array, $2, NULL, $1); }
-	| opt array_keyname '=' '{' param_list comma_opt '}' { MakeScalarParam($$, struct, $2, $5, $1); SetParent( $$, $5 ); }
-	;
-	
-opt: /* empty */	{ $$ = 0; }
-	| OPT_P			{ $$ = 1; free($1); }
-
-comma_opt:
-	','				{ $$=NULL; }
-	| /* EMPTY */	{ $$=NULL; }
+elem_identifier:
+	identifier						{ $$ = $1; }
+	| identifier '[' NATURAL_P ']'	{ 
+			$$ = $1; 
+			$$->index = atoi($3);
+			/* XXX check !*/
+			free($3);
+		}
 	;
 
 struct_list:
@@ -209,6 +198,19 @@ struct_list:
 			SetParent($1, str);
 			$$ = $1;
 		}
+	;
+
+identifier:
+	KEY_P			{ MakeAtom($$, $1); }
+	| NULL_P		{ MakeAtom($$, $1); }
+	;
+
+opt: /* empty */	{ $$ = 0; }
+	| OPT_P			{ $$ = 1; free($1); }
+
+comma_opt:
+	','				{ $$=NULL; }
+	| /* EMPTY */	{ $$=NULL; }
 	;
 
 %%
