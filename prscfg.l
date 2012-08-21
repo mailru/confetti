@@ -88,6 +88,8 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 			BEGIN CCOMMENT;
 		}
 
+<INITIAL>#[^\n]*		{ /* ignore single-line comment */ }
+
 <INITIAL>{PATHCHAR}*(\/{PATHCHAR}*)+ {
 			/* Accept an unquoted path-like string. */
 			yylval->str = strdupn(yytext, yyleng);
@@ -113,8 +115,6 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 		}
 
 <INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
-
-<INITIAL>#[^\n]*		{ /* ignore single-line comment */ }
 
 <INITIAL>[ \t\r\f]+   	{ /* ignore whitespace */ }
 
