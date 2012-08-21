@@ -81,7 +81,7 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 				scan_yyerror("No memory", yyextra->lineno);	
 			yyextra->length = 0;
 			BEGIN xQUOTED;
-	}
+		}
 
 <INITIAL>\/\* {
 			yyextra->commentCounter=1;
@@ -110,7 +110,7 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
 			return STRING_P;
-}
+		}
 
 <INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
 
