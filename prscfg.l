@@ -22,41 +22,50 @@ static YY_BUFFER_STATE buf = NULL;
 %option never-interactive
 %option nodefault
 %option noyywrap
-%option nounput
 %option prefix="prscfg_yy"
 %option reentrant
 %option noinput
+%option noyy_top_state
 %option bison-bridge
+%option stack
 %option warn
 
-%x xQUOTED
+%x VALUE
+%x QUOTED
+%x UNQUOTED
 %x CCOMMENT
 
 KEYCHARSTART	[a-zA-Z_]
 KEYCHAR			[a-zA-Z0-9_]
 DIGIT			[0-9]
+WS				[ \t\f\r]
 
-/* Chars that may comprise a non-quoted string. */
-STRINGCHAR		[^ \t\f\r\n\[\]{}\"=,.#]
+/* Default separators */
+DEFSEP			[\[\]{},.=]
 
-/* Chars that may comprise a non-quoted path string. A path is identified
-   by the presence of a slash and it allows dots in addition to regular
-   non-quoted string chars. */
-PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
+/* Value separators */
+VALSEP			[\[\]{},]
 
 %%
 
-<INITIAL>[Nn][Uu][Ll][Ll]	{
-			yylval->str = strdup("NULL");
-			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);	
-			return NULL_P;
+<INITIAL,VALUE>\n		{ yyextra->lineno++; }
+
+<INITIAL,VALUE>{WS}+	{ /* ignore whitespace */ }
+
+<INITIAL,VALUE>#[^\n]*	{ /* ignore single-line comment */ }
+
+<INITIAL,VALUE>\/\*		{
+			/* scan a C-style comment */
+			yyextra->commentCounter = 1;
+			yyextra->ostate = YYSTATE;
+			BEGIN CCOMMENT;
 		}
 
-<INITIAL>[Oo][Pp][Tt] {
+<INITIAL>[Oo][Pp][Tt]	{
 			yylval->str = strdup("OPT");
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
+			fprintf(stderr, "opt: %s\n", yylval->str);
 			return OPT_P;
 		}
 
@@ -64,102 +73,129 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
+			fprintf(stderr, "key: %s\n", yylval->str);
 			return KEY_P;
 		}
 
-<INITIAL>{DIGIT}+ {
+<INITIAL>{DIGIT}+		{
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
-			return NATURAL_P;
+			fprintf(stderr, "index: %s\n", yylval->str);
+			return INDEX_P;
 		}
 
-<INITIAL>\"	{
+<INITIAL>{DEFSEP}		{ return *yytext; }
+
+<INITIAL>. 				{ return scan_yyerror("syntax error: Unknown character", yyextra->lineno); }
+
+<INITIAL><<EOF>> 		{ yyterminate(); }
+
+<VALUE>[Nn][Uu][Ll][Ll]	{
+			yylval->str = strdup("NULL");
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);
+			fprintf(stderr, "null: %s\n", yylval->str);
+			BEGIN INITIAL;
+			return NULL_P;
+		}
+
+<VALUE>\"				{
+			/* Accept a quoted string. */
 			yyextra->total = 256;
 			yyextra->strbuf = malloc(yyextra->total);
 			if (!yyextra->strbuf)
 				scan_yyerror("No memory", yyextra->lineno);	
 			yyextra->length = 0;
-			BEGIN xQUOTED;
+			BEGIN QUOTED;
 		}
 
-<INITIAL>\/\* {
-			yyextra->commentCounter=1;
-			BEGIN CCOMMENT;
+<VALUE>{VALSEP}			{
+			BEGIN INITIAL;
+			return *yytext;
 		}
 
-<INITIAL>#[^\n]*		{ /* ignore single-line comment */ }
-
-<INITIAL>{PATHCHAR}*(\/{PATHCHAR}*)+ {
-			/* Accept an unquoted path-like string. */
-			yylval->str = strdupn(yytext, yyleng);
-			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);
-			return STRING_P;
-		}
-
-<INITIAL>[+-]?{DIGIT}+"."{STRINGCHAR}+ {
-			/* Accept an unquoted fpnum-like string. */
-			yylval->str = strdupn(yytext, yyleng);
-			if (!yylval->str)
-				scan_yyerror("No memory", yyextra->lineno);
-			return STRING_P;
-		}
-
-<INITIAL>{STRINGCHAR}+ {
+<VALUE>. 				{
 			/* Accept an unquoted string. */
-			yylval->str = strdupn(yytext, yyleng);
+			yymore();
+			BEGIN UNQUOTED;
+		}
+
+<VALUE><<EOF>> 			{
+			return scan_yyerror("Unexpected end of string (expecting value)", yyextra->lineno);
+		}
+
+<UNQUOTED>#				|
+<UNQUOTED>\n			|
+<UNQUOTED>{WS}			|
+<UNQUOTED>{VALSEP}		{
+			int next = yytext[yyleng - 1];
+			yylval->str = strdupn(yytext, yyleng - 1);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
+			fprintf(stderr, "unquoted: %s\n", yylval->str);
+			unput(next);
+			BEGIN INITIAL;
 			return STRING_P;
 		}
 
-<INITIAL>[\=\[\]\{\}\.\,] { return *yytext; }
-
-<INITIAL>[ \t\r\f]+   	{ /* ignore whitespace */ }
-
-<INITIAL>\n   			{ yyextra->lineno++; }
-
-<INITIAL><<EOF>> {
-			yyterminate();
+<UNQUOTED>\/\*			{
+			yylval->str = strdupn(yytext, yyleng - 2);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);
+			fprintf(stderr, "unquoted: %s\n", yylval->str);
+			unput('*');
+			unput('/');
+			BEGIN INITIAL;
+			return STRING_P;
 		}
 
-<INITIAL>. { return scan_yyerror("syntax error: Unknown character", yyextra->lineno); }
+<UNQUOTED>. 			{ yymore(); }
 
-<xQUOTED>\\.  {
+<UNQUOTED><<EOF>>		{
+			yylval->str = strdupn(yytext, yyleng - 1);
+			if (!yylval->str)
+				scan_yyerror("No memory", yyextra->lineno);
+			fprintf(stderr, "unquoted: %s\n", yylval->str);
+			BEGIN INITIAL;
+			return STRING_P;
+		}
+
+<QUOTED>\\.  {
 			if (addchar(yyscanner, yytext[1]))
 				scan_yyerror("No memory", yyextra->lineno);
 		}
 
-<xQUOTED>\\\n  {
+<QUOTED>\\\n  {
 			yyextra->lineno++;
 		}
 
-<xQUOTED>\"			{
+<QUOTED>\"			{
 			yyextra->strbuf[yyextra->length] = '\0';
 			yylval->str = yyextra->strbuf;
+			fprintf(stderr, "quoted: %s\n", yylval->str);
 			BEGIN INITIAL;
 			yyextra->strbuf = NULL;
 			return STRING_P;
 		}
 
-<xQUOTED>\\ {
+<QUOTED>\\ {
 			/* This is only needed for \ just before EOF */
 		}
 
-<xQUOTED>[^\\\"\n]+   {
+<QUOTED>[^\\\"\n]+   {
 			if (addstring(yyscanner, yytext, yyleng))
 				scan_yyerror("No memory", yyextra->lineno);
 		}
 
-<xQUOTED>\n   {
+<QUOTED>\n   {
 			if (addchar(yyscanner, yytext[0]))
 				scan_yyerror("No memory", yyextra->lineno);
 			yyextra->lineno++;
 		}
 
-<xQUOTED><<EOF>> {
-			return scan_yyerror("Unexpected end of string", yyextra->lineno);
+<QUOTED><<EOF>> {
+			return scan_yyerror("Unexpected end of string (expecting closing quote)", yyextra->lineno);
 		}
 
 <CCOMMENT>\/\*  {
@@ -169,7 +205,7 @@ PATHCHAR		[^ \t\f\r\n\[\]{}\"=,]
 <CCOMMENT>\*\/  {
 			yyextra->commentCounter--;
 			if (yyextra->commentCounter == 0)
-				BEGIN INITIAL;
+				BEGIN yyextra->ostate;
 		}
 
 <CCOMMENT>\n 	{ yyextra->lineno++; }
@@ -222,6 +258,20 @@ prscfgScannerFinish(prscfg_yyscan_t scanner) {
 		yy_delete_buffer( buf, scanner );
 	yylex_destroy(scanner);
 	buf = NULL;
+}
+
+void
+prscfgScannerStartValue(prscfg_yyscan_t scanner)
+{
+fprintf(stderr, "start val\n");
+	yy_push_state(VALUE, scanner);
+}
+
+static void
+prscfgScannerEndValue(prscfg_yyscan_t scanner)
+{
+fprintf(stderr, "end val\n");
+	yy_pop_state(scanner);
 }
 
 /*
