@@ -65,7 +65,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdup("OPT");
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
-			fprintf(stderr, "opt: %s\n", yylval->str);
 			return OPT_P;
 		}
 
@@ -73,7 +72,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
-			fprintf(stderr, "key: %s\n", yylval->str);
 			return KEY_P;
 		}
 
@@ -81,7 +79,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdupn(yytext, yyleng);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);	
-			fprintf(stderr, "index: %s\n", yylval->str);
 			return INDEX_P;
 		}
 
@@ -95,7 +92,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdup("NULL");
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
-			fprintf(stderr, "null: %s\n", yylval->str);
 			BEGIN INITIAL;
 			return NULL_P;
 		}
@@ -133,7 +129,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdupn(yytext, yyleng - 1);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
-			fprintf(stderr, "unquoted: %s\n", yylval->str);
 			unput(next);
 			BEGIN INITIAL;
 			return STRING_P;
@@ -143,7 +138,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdupn(yytext, yyleng - 2);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
-			fprintf(stderr, "unquoted: %s\n", yylval->str);
 			unput('*');
 			unput('/');
 			BEGIN INITIAL;
@@ -156,7 +150,6 @@ VALSEP			[\[\]{},]
 			yylval->str = strdupn(yytext, yyleng - 1);
 			if (!yylval->str)
 				scan_yyerror("No memory", yyextra->lineno);
-			fprintf(stderr, "unquoted: %s\n", yylval->str);
 			BEGIN INITIAL;
 			return STRING_P;
 		}
@@ -173,7 +166,6 @@ VALSEP			[\[\]{},]
 <QUOTED>\"			{
 			yyextra->strbuf[yyextra->length] = '\0';
 			yylval->str = yyextra->strbuf;
-			fprintf(stderr, "quoted: %s\n", yylval->str);
 			BEGIN INITIAL;
 			yyextra->strbuf = NULL;
 			return STRING_P;
@@ -263,14 +255,12 @@ prscfgScannerFinish(prscfg_yyscan_t scanner) {
 void
 prscfgScannerStartValue(prscfg_yyscan_t scanner)
 {
-fprintf(stderr, "start val\n");
 	yy_push_state(VALUE, scanner);
 }
 
 static void
 prscfgScannerEndValue(prscfg_yyscan_t scanner)
 {
-fprintf(stderr, "end val\n");
 	yy_pop_state(scanner);
 }
 
