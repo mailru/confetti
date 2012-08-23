@@ -207,7 +207,6 @@ elem
 
 name
 	: KEY_P			{ MakeAtom($$, $1); }
-	| NULL_P		{ MakeAtom($$, $1); }
 	;
 
 opt
@@ -216,7 +215,7 @@ opt
 	;
 
 comma_opt
-	: ','				{ $$=NULL; }
+	: ','			{ $$=NULL; }
 	| /* EMPTY */	{ $$=NULL; }
 	;
 
