@@ -1,8 +1,8 @@
-==========Accepted: 3; Skipped: 0; Optional: 1===========
+==========Accepted: 4; Skipped: 0; Optional: 1===========
 foo => '1234'
 bar => '-54321'
-asdf.k1 => 'as"d'
-asdf.k2 => 'NEWVALUE'
+asdf.k1 => 'UNQUOTED-VALUE'
+asdf.k2 => 'QUOTED VALUE'
 asdf.array[0].qwerty => '123.9'
 asdf.array[0].qwer1 => '123'
 asdf.array[0].substruct.sss => 'asdf.array.substruct.sss'
