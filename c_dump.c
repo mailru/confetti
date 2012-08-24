@@ -1676,23 +1676,27 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 	); 
 
 	fprintf(fh,
-		"void\n"
+		"int\n"
 		"parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
-		"\tOptDef *option;\n\n"
-		"\toption = parseCfgDef(fh);\n"
+		"\tOptDef *option = parseCfgDef(fh);\n"
+		"\tif (option == NULL)\n"
+		"\t\treturn -1;\n"
 		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped, n_optional);\n"
 		"\tfreeCfgDef(option);\n"
+		"\treturn 0;\n"
 		"}\n\n"
 		, name, name
 	);
 
 	fprintf(fh,
-		"void\n"
+		"int\n"
 		"parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
-		"\tOptDef *option;\n\n"
-		"\toption = parseCfgDefBuffer(buffer);\n"
+		"\tOptDef *option = parseCfgDefBuffer(buffer);\n"
+		"\tif (option == NULL)\n"
+		"\t\treturn -1;\n"
 		"\tacceptCfgDef(c, option, check_rdonly, n_accepted, n_skipped, n_optional);\n"
 		"\tfreeCfgDef(option);\n"
+		"\treturn 0;\n"
 		"}\n\n"
 		, name, name
 	);
