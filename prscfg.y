@@ -408,7 +408,7 @@ freeCfgDef(OptDef *def) {
 }
 
 OptDef*
-parseCfgDef(FILE *fh) {
+parseCfgDef(FILE *fh, int *error) {
 	prscfg_yyscan_t			yyscanner;
 	prscfg_yy_extra_type	yyextra;
 	int						yyresult;
@@ -419,6 +419,8 @@ parseCfgDef(FILE *fh) {
 	yyresult = prscfg_yyparse(yyscanner);
 	prscfgScannerFinish(yyscanner);
 
+	if (error)
+		*error = yyresult;
 	if (yyresult != 0) 
 		return NULL;
 
@@ -426,7 +428,7 @@ parseCfgDef(FILE *fh) {
 }
 
 OptDef*
-parseCfgDefBuffer(char *buffer) {
+parseCfgDefBuffer(char *buffer, int *error) {
 	prscfg_yyscan_t			yyscanner;
 	prscfg_yy_extra_type	yyextra;
 	int						yyresult;
@@ -437,6 +439,8 @@ parseCfgDefBuffer(char *buffer) {
 	yyresult = prscfg_yyparse(yyscanner);
 	prscfgScannerFinish(yyscanner);
 
+	if (error)
+		*error = yyresult;
 	if (yyresult != 0) 
 		return NULL;
 
