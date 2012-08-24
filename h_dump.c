@@ -191,8 +191,8 @@ hDump(FILE *fh, char* name, ParamDef *def) {
 	fprintf(fh, "int fill_default_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "void swap_%s(struct %s *c1, struct %s *c2);\n\n",
 		name, name, name);
-	fprintf(fh, "void parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional);\n\n", name, name);
-	fprintf(fh, "void parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional);\n\n", name, name);
+	fprintf(fh, "int parse_cfg_file_%s(%s *c, FILE *fh, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional);\n\n", name, name);
+	fprintf(fh, "int parse_cfg_buffer_%s(%s *c, char *buffer, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional);\n\n", name, name);
 	fprintf(fh, "int check_cfg_%s(%s *c);\n\n", name, name);
 	fprintf(fh, "int dup_%s(%s *dst, %s *src);\n\n", name, name, name);
 	fprintf(fh, "void destroy_%s(%s *c);\n\n", name, name);
