@@ -44,7 +44,7 @@ WS				[ \t\f\r]
 DEFSEP			[\[\]{},.=]
 
 /* Value separators */
-VALSEP			[\[\]{},]
+VALSEP			[\[\]{},=]
 
 %%
 
