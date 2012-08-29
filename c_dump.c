@@ -1616,7 +1616,6 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"acceptCfgDef(%s *c, OptDef *opt, int check_rdonly, int *n_accepted, int *n_skipped, int *n_optional) {\n"
 		"\tConfettyError	r;\n"
 		"\tOptDef		*orig_opt = opt;\n\n"
-		"\n"
 		"\twhile(opt) {\n"
 		"\t\tr = acceptValue(c, opt, check_rdonly);\n"
 		"\t\tswitch(r) {\n"
