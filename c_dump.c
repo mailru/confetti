@@ -460,11 +460,11 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						if (def->flags & PARAMDEF_RDONLY) {
 							fputs("\t\tif (check_rdonly && ( (opt->paramValue.scalarval == NULL && ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
-							fputs(" == NULL) || strcmp(opt->paramValue.scalarval, ", fh);
+							fputs(" == NULL) || confetti_strcmp(opt->paramValue.scalarval, ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(") != 0))\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
-						fputs("\t\t if (", fh);
+						fputs("\t\tif (", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 						fputs(") free(", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
@@ -1570,6 +1570,10 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"} while(0)\n\n"
 		, fh
 	);
+
+	fprintf(fh,
+		"int\n"
+		"confetti_strcmp(char *s1, char *s2);\n\n");
 
 	fprintf(fh, 
 		"static ConfettyError\n"
