@@ -28,7 +28,8 @@ main(int argc __attribute__ ((unused)), char* argv[] __attribute__ ((unused))) {
 		&cfg,
 		"asdf.array[2].subarray[3].subkey = 123456789 "
 		"root_array[3].ra = 12 "
-		"asdf.k2=\"NEWVALUE\" " 
+		"asdf.k1=UNQUOTED-VALUE "
+		"asdf.k2=\"QUOTED VALUE\" " 
 		"opt no_such_param = 123",
 		0, &nAccepted, &nSkipped, &nOptional
 	);
