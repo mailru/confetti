@@ -91,7 +91,7 @@ static OptDef	*output;
 
 %pure-parser
 %expect 0
-%name-prefix="prscfg_yy"
+%name-prefix "prscfg_yy"
 %error-verbose
 
 %parse-param {prscfg_yyscan_t yyscanner}
