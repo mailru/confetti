@@ -1773,6 +1773,7 @@ cDump(FILE *fh, char* name, ParamDef *def) {
 		"\t%s_iterator_t iterator, *i = &iterator;\n\n", name);
 	makeCleanFlags(fh, def, 0);
 	fputs(
+		"\t(void)opt;\n"
 		"}\n\n",
 		fh
 	);
