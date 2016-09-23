@@ -2,7 +2,7 @@ CONFETTI=../confetti
 NAME=my_product
 CFG=example.cfgtmpl
 
-CC=gcc
+CC?=gcc
 
 CFLAGS=-Wall -g -O0 -Werror -std=gnu99
 INCLUDE=-I.
