@@ -375,7 +375,7 @@ plainOptDef(OptDef *def, OptDef *list) {
 				}
 				break;
 			default:
-				out_warning(CNF_INTERNALERROR, "Unkown paramType: %d", def->paramType);
+				out_warning(CNF_INTERNALERROR, "Unknown paramType: %d", def->paramType);
 		}
 
 		ptr = def->next;
