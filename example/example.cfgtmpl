@@ -83,3 +83,5 @@ array_with_required_structs_with_structs = [
 
 flsb = false
 flst = true
+
+ro_empty_str = NULL, ro

@@ -458,9 +458,7 @@ makeAccept(FILE *fh, ParamDef *def, int i) {
 						break;
 					case	stringType:
 						if (def->flags & PARAMDEF_RDONLY) {
-							fputs("\t\tif (check_rdonly && ( (opt->paramValue.scalarval == NULL && ", fh);
-							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
-							fputs(" == NULL) || confetti_strcmp(opt->paramValue.scalarval, ", fh);
+							fputs("\t\tif (check_rdonly && ( confetti_strcmp(opt->paramValue.scalarval, ", fh);
 							dumpStructFullPath(fh, "c", "i", def, 1, 0, 1);
 							fputs(") != 0))\n\t\t\treturn CNF_RDONLY;\n", fh);
 						}
