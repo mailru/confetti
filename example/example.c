@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <prscfg.h>
 #include <my_product_cfg.h>
@@ -22,6 +23,8 @@ main(int argc, char* argv[]) {
 	my_product	cfg, dup_cfg;
 	my_product_iterator_t	*i;
 	char		*key, *value;
+
+        memset(&dup_cfg, 0, sizeof(dup_cfg));
 
 	fill_default_my_product(&cfg);
 
