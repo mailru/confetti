@@ -1,3 +1,5 @@
 confetti -- configuration file parser generator
 Author: Teodor Sigaev
 
+Binary build for debian:
+dpkg-buildpackage -B

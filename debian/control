@@ -1,0 +1,15 @@
+Source: confetti
+Priority: optional
+Maintainer: Vespertinus <rrvespertinus@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+    bison, flex
+Standards-Version: 4.5.1
+Section: libs
+Homepage: https://github.com/mailru/confetti
+Rules-Requires-Root: no
+
+Package: confetti
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: configuration file parser generator
