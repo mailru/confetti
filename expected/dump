@@ -50,3 +50,4 @@ array (RW)	array_with_required_structs_with_structs
 			bool (RW)	f3
 bool (RW)	flsb
 bool (RW)	flst
+char* (RO)	ro_empty_str

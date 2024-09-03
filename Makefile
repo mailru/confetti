@@ -2,12 +2,12 @@ CC?=gcc
 AR=ar
 RANLIB=ranlib
 LD=ld
-BISON=bison -y -d 
+BISON=bison -y -Wno-yacc -Wno-deprecated -d 
 FLEX=flex
 
 ARFLAGS=rcv
 LDFLAGS=-r
-CFLAGS=-Wall -g -O0 -Werror -pedantic -std=gnu99
+CFLAGS=-Wall -g -O0 -Werror -pedantic -std=gnu99 -Wno-strict-prototypes -Wno-unused-but-set-variable
 INCLUDE=-I.
 LIB=
 

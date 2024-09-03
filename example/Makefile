@@ -4,7 +4,7 @@ CFG=example.cfgtmpl
 
 CC?=gcc
 
-CFLAGS=-Wall -g -O0 -Werror -std=gnu99
+CFLAGS=-Wall -g -O0 -Werror -std=gnu99 -Wno-unused-but-set-variable
 INCLUDE=-I.
 LIB=
 
