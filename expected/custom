@@ -69,6 +69,7 @@ array_with_required_structs_with_structs[2].s.f2 => '2'
 array_with_required_structs_with_structs[2].s.f3 => 'true'
 flsb => 'false'
 flst => 'true'
+ro_empty_str => (null)
 ==========Check===========
 Option 'foo' is not set (or has a default value)
 Option 'asdf.array[0].subarray[0].subke12' is not set (or has a default value)
@@ -147,6 +148,7 @@ array_with_required_structs_with_structs[2].s.f2 => '2'
 array_with_required_structs_with_structs[2].s.f3 => 'true'
 flsb => 'false'
 flst => 'true'
+ro_empty_str => (null)
 ==========Compare=========
 total: equal
 only_rdonly: equal
